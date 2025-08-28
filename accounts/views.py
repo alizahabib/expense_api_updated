@@ -32,15 +32,21 @@ def login_view(request):
             )
             if user is not None and user.is_active:
                 login(request, user)
-                return redirect('dashboard')
-            messages.error(request, 'Invalid username or password.')
+                return render(request, 'accounts/login.html', {
+                    'form': form,
+                    'login_success': True,  # 👈 Trigger alert
+                    'user': user
+                })
+            else:
+                messages.error(request, 'Invalid username or password.')
     else:
         form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
 
+
 def logout_view(request):
     logout(request)
-    return redirect('login')
+    return redirect('register')
 
 
 from django.shortcuts import render, redirect
@@ -74,3 +80,52 @@ def dashboard(request):
         'saved': saved,  # ✅ send flag to template
     })
 
+
+
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count
+from django.utils.dateparse import parse_date
+from .models import Expense
+
+@login_required
+def user_report(request):
+    expenses = Expense.objects.filter(user=request.user)
+
+    # Get unique categories for dropdown
+    categories = Expense.objects.filter(user=request.user).values_list('category', flat=True).distinct()
+
+    # Filters
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if category:
+        expenses = expenses.filter(category=category)
+    if start_date:
+        expenses = expenses.filter(date__gte=parse_date(start_date))
+    if end_date:
+        expenses = expenses.filter(date__lte=parse_date(end_date))
+
+    total_amount = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+
+    highest_category = (
+        Expense.objects.filter(user=request.user)
+        .values('category')
+        .annotate(total=Sum('amount'))
+        .order_by('-total')
+        .first()
+    )
+
+    context = {
+        'expenses': expenses,
+        'total_amount': total_amount,
+        'category': category,
+        'start_date': start_date,
+        'end_date': end_date,
+        'highest_category': highest_category['category'] if highest_category else None,
+        'category_count': expenses.count(),
+        'categories': categories,  # 🔥 sent to template
+    }
+
+    return render(request, 'accounts/user_report.html', context)

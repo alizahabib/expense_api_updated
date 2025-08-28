@@ -1,5 +1,55 @@
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            padding: 50px;
+            background-color: #fffdeb;
+        }
+        form {
+            background: white;
+            padding: 30px;
+            display: inline-block;
+            border-radius: 10px;
+        }
+        input {
+            display: block;
+            margin-bottom: 15px;
+            padding: 10px;
+            width: 100%;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Login</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Login</button>
+    </form>
+
+    <!-- ✅ Show Alert on Login Success -->
+    {% if login_success %}
+    <script>
+        Swal.fire({
+            title: "Login Successful!",
+            icon: "success",
+            html: `
+                <a href="{% url 'dashboard' %}" style="padding:10px 20px; background:#1e1e1e; color:white; border-radius:5px; margin-right:10px; text-decoration:none;">➕ Add Expense</a>
+                <a href="{% url 'user_report' %}" style="padding:10px 20px; background:#1e1e1e; color:white; border-radius:5px; text-decoration:none;">📊 View Report</a>
+            `,
+            showConfirmButton: false
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
