@@ -1,11 +1,8 @@
 from django.shortcuts import render
-
-# Create your views here.
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-
 from .forms import RegisterForm, LoginForm
 
 def register_view(request):
@@ -49,7 +46,6 @@ def logout_view(request):
     return redirect('register')
 
 
-from django.shortcuts import render, redirect
 from expenses.forms import ExpenseForm
 from django.contrib.auth.decorators import login_required
 from .forms import ExpenseForm
@@ -58,7 +54,7 @@ from .models import Expense
 
 @login_required
 def dashboard(request):
-    saved = False  # ✅ Add this line
+    saved = False 
 
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES)
@@ -125,7 +121,23 @@ def user_report(request):
         'end_date': end_date,
         'highest_category': highest_category['category'] if highest_category else None,
         'category_count': expenses.count(),
-        'categories': categories,  # 🔥 sent to template
+        'categories': categories,  #  sent to template
     }
 
     return render(request, 'accounts/user_report.html', context)
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Expense
+from .serializers import ExpenseSerializer
+
+class ExpenseListAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        expenses = Expense.objects.filter(user=request.user)
+        serializer = ExpenseSerializer(expenses, many=True)
+        return Response(serializer.data)

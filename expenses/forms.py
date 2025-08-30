@@ -6,5 +6,5 @@ class ExpenseForm(forms.ModelForm):
         model = Expense
         fields = ['category', 'title', 'amount', 'date', 'receipt', 'notes']
         widgets = {
-           'date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+           'date': forms.DateInput(attrs={'type': 'date'}, format='%d-%m-%y')
         }
