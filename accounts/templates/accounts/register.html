@@ -25,7 +25,12 @@
       color: #8B4513;
     }
 
-    .login-btn {
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .login-btn, .admin-btn {
       background: #b85d1cff;
       color: white;
       padding: 6px 18px;
@@ -92,7 +97,13 @@
   <!-- Navbar -->
   <nav>
     <div class="brand">MY EXPENSES</div>
-    <a href="{% url 'login' %}" class="login-btn">Login</a>
+    <div class="nav-buttons">
+      <a href="{% url 'admin_login_view' %}" style="padding:10px 20px; background:#1e1e1e; color:white; border-radius:5px;">Admin Login</a>
+
+
+
+      <a href="{% url 'login' %}" class="login-btn">Login</a>
+    </div>
   </nav>
 
   <!-- Register Card -->

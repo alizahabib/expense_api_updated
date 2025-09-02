@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Detail Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fdfce9;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav {
+      background-color: #fff3cc;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      font-weight: bold;
+      color: #8B4513;
+      font-size: 24px;
+    }
+
+    .logout-btn {
+      background: #b85d1cff;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 30px;
+    }
+
+    h1 {
+      color: #5c3b0f;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      color: #4c3d25;
+      margin-top: 0;
+    }
+
+    .filters {
+      margin-top: 20px;
+      margin-bottom: 25px;
+    }
+
+    .filters select,
+    .filters input,
+    .filters button {
+      padding: 6px;
+      margin-right: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .summary {
+      background-color: #ffffcc;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2e5c4;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 20px;
+      background-color: #8B4513;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav>
+    <div class="brand">MY EXPENSES - User Report</div>
+    <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+  </nav>
+
+  <div class="container">
+    <h1>Report for: {{ report_owner.username }}</h1>
+    <h2>Total Expenses: Rs. {{ total|floatformat:2 }}</h2>
+
+    <!-- Filters -->
+    <form method="get" class="filters">
+      <label>Category:</label>
+      <select name="category">
+        <option value="all" {% if selected_category == "all" %}selected{% endif %}>All</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+
+      <label>From:</label>
+      <input type="date" name="start_date" value="{{ start_date }}">
+
+      <label>To:</label>
+      <input type="date" name="end_date" value="{{ end_date }}">
+
+      <button type="submit">Generate Report</button>
+    </form>
+
+    <!-- Summary -->
+    <div class="summary">
+      <p><strong>Total in Filter:</strong> {{ total|floatformat:2 }}</p>
+      <p><strong>Top Category:</strong> {{ top_category }}</p>
+      <p><strong># Entries:</strong> {{ entry_count }}</p>
+    </div>
+
+    <!-- Expenses Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Title</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for expense in expenses %}
+          <tr>
+            <td>{{ expense.date }}</td>
+            <td>{{ expense.title }}</td>
+            <td>Rs. {{ expense.amount|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3">No expenses found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Back button -->
+    <a href="{% url 'admin_dashboard' %}" class="back-btn">← Back to Admin Dashboard</a>
+
+  </div>
+</body>
+</html>

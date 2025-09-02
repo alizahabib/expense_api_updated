@@ -92,7 +92,7 @@
     <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
   </nav>
 
-  <h1>User Report</h1>
+  <h1>User Report for {{ user.username }}</h1>
   <h2>Total: Rs. {{ total_amount }}</h2>
 
   <form method="get">
