@@ -254,3 +254,23 @@ def user_detail_report(request, user_id):
         'start_date': start_date,
         'end_date': end_date,
     })
+
+
+
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import redirect
+from .models import Expense
+
+@user_passes_test(lambda u: u.is_superuser)
+def update_expense_dates(request, user_id):
+    if request.method == 'POST':
+        for key, value in request.POST.items():
+            if key.startswith('date_'):
+                expense_id = key.split('_')[1]
+                try:
+                    expense = Expense.objects.get(id=expense_id, user_id=user_id)
+                    expense.date = value
+                    expense.save()  # ✅ saves date change to DB
+                except Expense.DoesNotExist:
+                    continue
+    return redirect('user_detail_report', user_id=user_id)

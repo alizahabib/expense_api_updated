@@ -137,31 +137,40 @@
       <p><strong># Entries:</strong> {{ entry_count }}</p>
     </div>
 
-    <!-- Expenses Table -->
-    <table>
-      <thead>
+   <!-- Editable Expenses Table with Save All -->
+ <form method="post" action="{% url 'update_expense_dates' report_owner.id %}">
+   {% csrf_token %}
+   <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Title</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for expense in expenses %}
         <tr>
-          <th>Date</th>
-          <th>Title</th>
-          <th>Amount</th>
+          <td>
+            <input type="date" name="date_{{ expense.id }}" value="{{ expense.date|date:'Y-m-d' }}">
+          </td>
+          <td>{{ expense.title }}</td>
+          <td>Rs. {{ expense.amount|floatformat:2 }}</td>
         </tr>
-      </thead>
-      <tbody>
-        {% for expense in expenses %}
-          <tr>
-            <td>{{ expense.date }}</td>
-            <td>{{ expense.title }}</td>
-            <td>Rs. {{ expense.amount|floatformat:2 }}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="3">No expenses found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+      {% empty %}
+        <tr><td colspan="3">No expenses found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-    <!-- Back button -->
-    <a href="{% url 'admin_dashboard' %}" class="back-btn">← Back to Admin Dashboard</a>
-
+  <!-- Save All Button -->
+  <div style="margin-top: 20px;">
+    <button type="submit" style="padding: 10px 20px; background-color: brown; color: white; font-weight: bold; border: none; border-radius: 5px;">Save All</button>
   </div>
+ </form>
+
+ <!-- Back button -->
+ <a href="{% url 'admin_dashboard' %}" class="back-btn">← Back to Admin Dashboard</a>
+
 </body>
 </html>
