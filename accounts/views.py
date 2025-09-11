@@ -77,34 +77,42 @@ def logout_view(request):
     return redirect('register')
 
 
-from expenses.forms import ExpenseForm
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 from .forms import ExpenseForm
 from .models import Expense
-
+from django.contrib.auth.decorators import login_required
+import datetime
 
 @login_required
 def dashboard(request):
-    saved = False 
+    saved = False  # ✅ for SweetAlert success
 
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
+
+            # ✅ Date-based approval logic
+            if expense.date < datetime.date.today():
+                expense.is_approved = False  # Needs admin approval
+            else:
+                expense.is_approved = True  # Auto approved
+
             expense.save()
-            saved = True  # ✅ Flag for alert
-            form = ExpenseForm()  # clear form after save
+            saved = True
+            form = ExpenseForm()  # Clear form after save
     else:
         form = ExpenseForm()
 
-    expenses = Expense.objects.filter(user=request.user).order_by('-date')
+    # ✅ Show only approved expenses to the user
+    expenses = Expense.objects.filter(user=request.user, is_approved=True).order_by('-date')
 
     return render(request, 'accounts/dashboard.html', {
         'form': form,
         'user': request.user,
         'expenses': expenses,
-        'saved': saved,  # ✅ send flag to template
+        'saved': saved,
     })
 
 
@@ -133,6 +141,16 @@ def user_report(request):
         expenses = expenses.filter(date__gte=parse_date(start_date))
     if end_date:
         expenses = expenses.filter(date__lte=parse_date(end_date))
+        
+        # 🔽 Sort the expenses by date in ascending order
+    expenses = expenses.order_by('date')    
+    
+    
+     # Pagination: 5 expenses per page
+    paginator = Paginator(expenses, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
 
     total_amount = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
 
@@ -146,6 +164,7 @@ def user_report(request):
 
     context = {
         'expenses': expenses,
+        'page_obj': page_obj,
         'total_amount': total_amount,
         'category': category,
         'start_date': start_date,
@@ -158,7 +177,7 @@ def user_report(request):
     return render(request, 'accounts/user_report.html', context)
 
 
-
+# for swagger
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -173,8 +192,8 @@ class ExpenseListAPI(APIView):
         serializer = ExpenseSerializer(expenses, many=True)
         return Response(serializer.data)
     
-    
-    
+        
+"""
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Sum
@@ -201,11 +220,56 @@ def admin_dashboard(request):
         'user_reports': user_reports
     })
 
+"""
+
+from datetime import date
+from django.db.models import Sum
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth import get_user_model
+from django.shortcuts import render
+from .models import Expense
+
+User = get_user_model()
+
+@user_passes_test(lambda u: u.is_superuser)
+def admin_dashboard(request):
+    today = date.today()
+    users = User.objects.all()
+    user_reports = []
+
+    for user in users:
+        all_expenses = Expense.objects.filter(user=user)
+
+        approved_expenses = all_expenses.filter(is_approved=True)
+        total = approved_expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+        count = approved_expenses.count()
+
+        # Show approve button if user has any past-dated unapproved expense
+        has_past_unapproved = all_expenses.filter(is_approved=False, date__lt=today).exists()
+
+        user_reports.append({
+            'user': user,
+            'total_expenses': total,
+            'expense_count': count,
+            'show_approve': has_past_unapproved,
+        })
+
+    return render(request, 'accounts/admin_dashboard.html', {
+        'user_reports': user_reports
+    })
+
+
+
+
 
 from django.db.models import Sum, Count
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import user_passes_test
 from .models import Expense, CustomUser
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
+from django.http import JsonResponse
+
 
 @user_passes_test(lambda u: u.is_superuser)
 def user_detail_report(request, user_id):
@@ -242,9 +306,23 @@ def user_detail_report(request, user_id):
 
     # All categories for dropdown
     categories = Expense.objects.values_list('category', flat=True).distinct()
+    
+        # Pagination
+    paginator = Paginator(expenses, 5)  # 5 expenses per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        html = render_to_string('accounts/partials/expense_table.html', {
+            'page_obj': page_obj,
+        }, request=request)
+        return JsonResponse({'table_html': html})
+
 
     return render(request, 'accounts/user_detail_report.html', {
         'report_owner': user,
+        'page_obj': page_obj,
         'expenses': expenses,
         'total': total,
         'entry_count': entry_count,
@@ -256,6 +334,8 @@ def user_detail_report(request, user_id):
     })
 
 
+
+# giving admin the right to change the date of the user expense item.
 
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import redirect
@@ -274,3 +354,18 @@ def update_expense_dates(request, user_id):
                 except Expense.DoesNotExist:
                     continue
     return redirect('user_detail_report', user_id=user_id)
+
+
+
+
+# to hold the expense record when the flag is FALSE before approving.
+
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, redirect
+from .models import Expense
+
+@require_POST
+def approve_expense(request, user_id):
+    today = date.today()
+    Expense.objects.filter(user_id=user_id, is_approved=False, date__lt=today).update(is_approved=True)
+    return redirect('/accounts/admin-dashboard/?approved=true')

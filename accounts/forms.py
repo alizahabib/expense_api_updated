@@ -23,4 +23,12 @@ from .models import Expense
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
-        fields = ['category', 'title', 'amount', 'date', 'receipt']
+        fields = ['category', 'title', 'amount', 'date']
+        widgets = {
+            'date': forms.DateInput(
+                attrs={
+                    'type': 'date',
+                    'placeholder': 'yyyy-mm-dd',  # 👈 Placeholder text
+                }
+            ),
+        }

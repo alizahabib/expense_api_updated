@@ -6,12 +6,13 @@
     <title>My Expense</title>
     <style>
         body {
-            background-color: #fffdeb;
+            background-color: #ece8caff;
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 50px;
         }
         form {
+            width: 30%;
             display: inline-block;
             text-align: left;
             background: white;
@@ -27,7 +28,7 @@
             border-radius: 4px;
         }
         button {
-            width: 100%;
+            width: 35%;
             background-color: #1e1e1e;
             color: white;
             padding: 10px;
@@ -95,7 +96,7 @@
             icon: 'success',
             confirmButtonText: 'OK'
         }).then(() => {
-            window.location.href = "{% url 'register' %}";
+            window.location.href = "{% url 'user_report' %}";
         });
     </script>
     {% endif %}

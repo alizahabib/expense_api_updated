@@ -64,6 +64,7 @@ class Expense(models.Model):
     receipt = models.FileField(upload_to='receipts/', blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=True)  # Default True for current or future dates
 
     def __str__(self):
         return f"{self.title} - {self.category} - {self.user.username}"

@@ -3,39 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <title>Register</title>
+
+  <!-- Font Awesome for eye icon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #e9e5d6ff;
+      background-color: #f2f2d8;
       margin: 0;
       padding: 0;
     }
 
     nav {
       background-color: #fff3cc;
-      padding: 12px 20px;
+      padding: 15px 25px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 20px;
     }
 
     .brand {
       font-weight: bold;
       color: #8B4513;
+      font-size: 24px;
     }
 
-    .nav-buttons {
-      display: flex;
-      gap: 10px;
-    }
-
-    .login-btn, .admin-btn {
+    .login-btn {
       background: #b85d1cff;
       color: white;
-      padding: 6px 18px;
+      padding: 8px 16px;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       text-decoration: none;
       font-weight: bold;
     }
@@ -44,51 +43,56 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: calc(100vh - 60px);
-      padding: 5px;
-      margin-top: 5px;
+      height: 80vh;
     }
 
     .card {
       background: white;
-      padding: 30px;
-      border-radius: 20px;
-      width: 300px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      width: 400px;
     }
 
-    h2 {
+    .card h2 {
       text-align: center;
-      margin-bottom: 25px;
-      color: #222;
+      margin-bottom: 30px;
     }
 
-    input[type="text"],
-    input[type="email"],
-    input[type="password"] {
-      width: 90%;
-      padding: 10px 12px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
+    .card form p {
+      margin-bottom: 20px;
     }
 
-    button {
-      width: 100%;
+    .card input {
+      width: 95%;
       padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .password-wrapper i {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #555;
+    }
+
+    button[type="submit"] {
       background-color: #8B4513;
       color: white;
       border: none;
-      border-radius: 6px;
+      padding: 10px;
+      border-radius: 5px;
+      width: 100%;
       font-size: 16px;
       font-weight: bold;
-      margin-top: 15px;
       cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #a05a24;
     }
   </style>
 </head>
@@ -99,9 +103,6 @@
     <div class="brand">MY EXPENSES</div>
     <div class="nav-buttons">
       <a href="{% url 'admin_login_view' %}" style="padding:10px 20px; background:#1e1e1e; color:white; border-radius:5px;">Admin Login</a>
-
-
-
       <a href="{% url 'login' %}" class="login-btn">Login</a>
     </div>
   </nav>
@@ -112,11 +113,43 @@
       <h2>Register</h2>
       <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+
+        <p>
+          {{ form.username.label_tag }}
+          {{ form.username }}
+        </p>
+
+        <p>
+          {{ form.email.label_tag }}
+          {{ form.email }}
+        </p>
+
+        <p>
+          {{ form.password.label_tag }}
+          <div class="password-wrapper">
+            {{ form.password }}
+            <i id="togglePassword" class="fa-solid fa-eye"></i>
+          </div>
+        </p>
+
         <button type="submit">Register</button>
       </form>
     </div>
   </div>
+
+  <!-- Toggle Password Script -->
+  <script>
+    const toggle = document.getElementById("togglePassword");
+    const passwordField = document.querySelector("input[name='password']");
+
+    toggle.addEventListener("click", function () {
+      const type = passwordField.getAttribute("type") === "password" ? "text" : "password";
+      passwordField.setAttribute("type", type);
+
+      this.classList.toggle("fa-eye");
+      this.classList.toggle("fa-eye-slash");
+    });
+  </script>
 
 </body>
 </html>
