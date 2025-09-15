@@ -93,12 +93,17 @@
       text-decoration: none;
       color: #8B4513;
       font-weight: bold;
+      cursor: pointer;
+    }
+
+    #expense-table {
+      transition: opacity 0.2s ease;
     }
   </style>
 </head>
 <body>
 
-  <!-- 🔥 NAVBAR WITH LOGOUT -->
+  <!-- NAVBAR WITH LOGOUT -->
   <nav>
     <div class="brand">MY EXPENSES</div>
     <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
@@ -108,7 +113,8 @@
     <h1>User Report for {{ user.username }}</h1>
     <h2>Total: Rs. {{ total_amount }}</h2>
 
-    <form method="get">
+    <!-- Filters -->
+    <form method="get" id="filter-form">
       <label>Category:
         <select name="category">
           <option value="">All</option>
@@ -127,45 +133,40 @@
       <button type="submit">Generate Report</button>
     </form>
 
+    <!-- Summary -->
     <div class="summary">
       <p><strong>Total This Filter:</strong> {{ total_amount }}</p>
       <p><strong>Highest Category:</strong> {{ highest_category }}</p>
       <p><strong># Entries:</strong> {{ category_count }}</p>
     </div>
 
+    <!-- Expense Table Container -->
     <div class="card">
       <h3>Expense List</h3>
-      <table>
-        <thead>
-          <tr><th>Date</th><th>Title</th><th>Amount</th></tr>
-        </thead>
-        <tbody>
-          {% for exp in page_obj %}
-            <tr>
-              <td>{{ exp.date }}</td>
-              <td>{{ exp.title }}</td>
-              <td>Rs. {{ exp.amount }}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="3">No expenses found.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <!-- Pagination Controls -->
-      <div class="pagination">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page='|cut:'&page=' }}">← Previous</a>
-        {% endif %}
-
-        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page='|cut:'&page=' }}">Next →</a>
-        {% endif %}
+      <div id="expense-table">
+        {% include 'accounts/partials/expense_table.html' %}
       </div>
     </div>
   </div>
+
+  <script>
+    // Handle pagination via AJAX
+    document.addEventListener('click', function (e) {
+      if (e.target.classList.contains('pagination-link')) {
+        e.preventDefault();
+        const url = e.target.getAttribute('href');
+
+        fetch(url, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          document.querySelector('#expense-table').innerHTML = data.html;
+          window.scrollTo({ top: document.querySelector('#expense-table').offsetTop - 50, behavior: 'smooth' });
+        });
+      }
+    });
+  </script>
 
 </body>
 </html>

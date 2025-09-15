@@ -150,6 +150,10 @@ def user_report(request):
     paginator = Paginator(expenses, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        html = render_to_string('accounts/partials/expense_table.html', {'page_obj': page_obj})
+        return JsonResponse({'html': html})
 
 
     total_amount = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
@@ -175,6 +179,9 @@ def user_report(request):
     }
 
     return render(request, 'accounts/user_report.html', context)
+
+
+
 
 
 # for swagger
