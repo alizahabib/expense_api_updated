@@ -17,6 +17,7 @@ urlpatterns = [
     path('admin/user/<int:user_id>/report/', user_detail_report, name='user_detail_report'),
     path('approve-expense/<int:user_id>/', approve_expense, name='approve_expense'),
     path('delete-team/<int:team_id>/', delete_team, name='delete_team'),
+    
 
 
    

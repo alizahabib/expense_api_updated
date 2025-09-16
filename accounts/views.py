@@ -271,30 +271,18 @@ def admin_dashboard(request):
 
 
 # views.py
-
-from django.shortcuts import render, redirect
-from .forms import TeamForm
-from .models import Team, Expense, CustomUser
-from django.db.models import Sum, Count
-from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import Paginator
+from django.shortcuts import render
+from .models import Expense, Team, User
+from .forms import TeamForm
 
-
-@user_passes_test(lambda u: u.is_superuser)
 def admin_dashboard(request):
-    users = CustomUser.objects.all()
-    team_form = TeamForm()
-
-    if request.method == 'POST':
-        team_form = TeamForm(request.POST)
-        if team_form.is_valid():
-            team_form.save()
-            return redirect('admin_dashboard')
-
+    users = User.objects.all()
     user_data = []
+
     for user in users:
         expenses = Expense.objects.filter(user=user)
-        total = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+        total = sum(e.amount for e in expenses)
         entry_count = expenses.count()
         all_approved = not expenses.filter(is_approved=False).exists()
 
@@ -302,20 +290,21 @@ def admin_dashboard(request):
             'user': user,
             'total': total,
             'entry_count': entry_count,
-            'approved': all_approved,
+            'approved': all_approved
         })
 
+    # ✅ PAGINATE the FINAL LIST (user_data), not the queryset
+    paginator = Paginator(user_data, 5)  # 5 per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     teams = Team.objects.prefetch_related('members').all()
-    
-    #paginator = Paginator(users, 5)  # 5 users per page
-    #page_number = request.GET.get('page')
-    #page_obj = paginator.get_page(page_number)
+    team_form = TeamForm()
 
     return render(request, 'accounts/admin_dashboard.html', {
-        'user_data': user_data,
-        'team_form': team_form,
+        'user_data': page_obj,      # ✅ now paginated
         'teams': teams,
-        #'page_obj': page_obj,
+        'team_form': team_form,
     })
 
 
@@ -445,3 +434,9 @@ def delete_team(request, team_id):
         team.delete()
         messages.success(request, f'Team "{team.name}" has been deleted.')
     return redirect('admin_dashboard')
+
+
+
+
+
+
