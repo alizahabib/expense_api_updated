@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, logout_view, dashboard, ExpenseListAPI,approve_expense, update_expense_dates, user_report, admin_login_view, admin_dashboard, user_detail_report
+from .views import register_view, login_view, logout_view, dashboard, ExpenseListAPI,approve_expense,delete_team, update_expense_dates, user_report, admin_login_view, admin_dashboard, user_detail_report
 
 urlpatterns = [
     path('register/', register_view, name='register'),
@@ -16,6 +16,8 @@ urlpatterns = [
    
     path('admin/user/<int:user_id>/report/', user_detail_report, name='user_detail_report'),
     path('approve-expense/<int:user_id>/', approve_expense, name='approve_expense'),
+    path('delete-team/<int:team_id>/', delete_team, name='delete_team'),
+
 
    
     

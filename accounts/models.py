@@ -68,3 +68,22 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.category} - {self.user.username}"
+
+
+
+
+#new
+
+# models.py
+
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class Team(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    members = models.ManyToManyField(User, related_name='teams')
+    
+    def __str__(self):
+        return self.name

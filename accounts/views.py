@@ -229,6 +229,7 @@ def admin_dashboard(request):
 
 """
 
+"""
 from datetime import date
 from django.db.models import Sum
 from django.contrib.auth.decorators import user_passes_test
@@ -263,6 +264,58 @@ def admin_dashboard(request):
 
     return render(request, 'accounts/admin_dashboard.html', {
         'user_reports': user_reports
+    })
+
+"""
+
+
+
+# views.py
+
+from django.shortcuts import render, redirect
+from .forms import TeamForm
+from .models import Team, Expense, CustomUser
+from django.db.models import Sum, Count
+from django.contrib.auth.decorators import user_passes_test
+from django.core.paginator import Paginator
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def admin_dashboard(request):
+    users = CustomUser.objects.all()
+    team_form = TeamForm()
+
+    if request.method == 'POST':
+        team_form = TeamForm(request.POST)
+        if team_form.is_valid():
+            team_form.save()
+            return redirect('admin_dashboard')
+
+    user_data = []
+    for user in users:
+        expenses = Expense.objects.filter(user=user)
+        total = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+        entry_count = expenses.count()
+        all_approved = not expenses.filter(is_approved=False).exists()
+
+        user_data.append({
+            'user': user,
+            'total': total,
+            'entry_count': entry_count,
+            'approved': all_approved,
+        })
+
+    teams = Team.objects.prefetch_related('members').all()
+    
+    #paginator = Paginator(users, 5)  # 5 users per page
+    #page_number = request.GET.get('page')
+    #page_obj = paginator.get_page(page_number)
+
+    return render(request, 'accounts/admin_dashboard.html', {
+        'user_data': user_data,
+        'team_form': team_form,
+        'teams': teams,
+        #'page_obj': page_obj,
     })
 
 
@@ -370,9 +423,25 @@ def update_expense_dates(request, user_id):
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect
 from .models import Expense
+from datetime import date
+
 
 @require_POST
 def approve_expense(request, user_id):
     today = date.today()
     Expense.objects.filter(user_id=user_id, is_approved=False, date__lt=today).update(is_approved=True)
     return redirect('/accounts/admin-dashboard/?approved=true')
+
+
+
+
+from django.shortcuts import get_object_or_404, redirect
+from .models import Team
+from django.contrib import messages
+
+def delete_team(request, team_id):
+    if request.method == 'POST':
+        team = get_object_or_404(Team, id=team_id)
+        team.delete()
+        messages.success(request, f'Team "{team.name}" has been deleted.')
+    return redirect('admin_dashboard')

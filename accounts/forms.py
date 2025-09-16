@@ -32,3 +32,22 @@ class ExpenseForm(forms.ModelForm):
                 }
             ),
         }
+        
+        
+        
+#new
+
+    
+from django import forms
+from .models import Team, CustomUser
+
+class TeamForm(forms.ModelForm):
+    class Meta:
+        model = Team
+        fields = ['name', 'members']
+        widgets = {
+            'members': forms.CheckboxSelectMultiple(attrs={
+                'style': 'max-height: 200px; overflow-y: auto; list-style: none;'
+            })
+        }
+        

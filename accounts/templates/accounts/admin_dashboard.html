@@ -1,175 +1,359 @@
-<!--<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
-    <style>
-        body { font-family: Arial; background: #f9f9f9; padding: 30px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        th, td { padding: 12px; border-bottom: 1px solid #ccc; text-align: left; }
-        h1 { color: #8B4513; }
-        a.button {
-            background-color: #8B4513;
-            color: white;
-            padding: 6px 12px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        nav {
-          background-color: #fff3cc;
-          padding: 10px 20px;
-          font-weight: bold;
-          font-size: 20px;
-          color: #8B4513;
-        }
-    </style>
-</head>
-<body>
-    <div style="background-color: #f7f7f7; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0;">MY EXPENSES - Admin Panel</h2>
-        <a href="{% url 'logout' %}" style="background-color: #c0392b; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px;">Logout</a>
-     </div>
- 
-    <h1>All Users & Reports</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Total Expenses</th>
-                <th>Entries</th>
-                <th>Report</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in user_reports %}
-            <tr>
-                <td>{{ user.user.username }}</td>
-                <td>Rs. {{ user.total_expenses }}</td>
-                <td>{{ user.expense_count }}</td>
-                <td>
-                    <a href="{% url 'user_detail_report' user.user.id %}" class="button">View Report</a>
-
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</body>
-</html>   -->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
-
-    <!-- ✅ SweetAlert2 for toast -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <style>
-        body { font-family: Arial; background: #f9f9f9; padding: 30px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        th, td { padding: 12px; border-bottom: 1px solid #ccc; text-align: left; }
-        h1 { color: #8B4513; }
-
-        a.button {
-            background-color: #8B4513;
-            color: white;
-            padding: 6px 12px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .approve-btn {
-            background-color: red;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .approved-btn {
-            background-color: green;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        nav {
-          background-color: #fff3cc;
-          padding: 10px 20px;
-          font-weight: bold;
-          font-size: 20px;
-          color: #8B4513;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #fffdeb;
+      font-family: Arial, sans-serif;
+    }
+    .brand {
+      font-weight: bold;
+      font-size: 24px;
+      color: #8B4513;
+    }
+    .logout-btn {
+      background-color: darkred;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+    .table thead {
+      background-color: #f2e5c4;
+    }
+    .approved-btn {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+    }
+    .team-card {
+      background: #fff;
+      border: 2px solid #c5b97e;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
-    <div style="background-color: #f7f7f7; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0;">MY EXPENSES - Admin Panel</h2>
-        <a href="{% url 'logout' %}" style="background-color: #c0392b; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px;">Logout</a>
+
+  <!-- Navbar -->
+  <nav class="d-flex justify-content-between align-items-center p-3 bg-warning">
+    <div class="brand">MY EXPENSES - Admin Panel</div>
+    <div>
+      <button class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#createTeamModal">+ Create Team</button>
+      <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
     </div>
+  </nav>
 
-    <h1>All Users & Reports</h1>
+  <div class="container mt-4">
+    <h2 class="text-brown mb-4">All Users & Reports</h2>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Total Expenses</th>
-                <th>Entries</th>
-                <th>Report</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in user_reports %}
-            <tr>
-                <td>{{ user.user.username }}</td>
-                <td>Rs. {{ user.total_expenses }}</td>
-                <td>{{ user.expense_count }}</td>
-                <td>
-                    <a href="{% url 'user_detail_report' user.user.id %}" class="button">View Report</a>
-                </td>
-                <td>
-                    {% if user.show_approve %}
-                        <form method="post" action="{% url 'approve_expense' user.user.id %}">
-                            {% csrf_token %}
-                            <button type="submit" class="approve-btn">Approve</button>
-                        </form>
-                    {% else %}
-                        <button class="approved-btn" disabled>✅ Approved</button>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+    <!-- User Table -->
+    <table class="table table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Total Expenses</th>
+          <th>Entries</th>
+          <th>Report</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for data in user_data %}
+        <tr>
+          <td>{{ data.user.username }}</td>
+          <td>Rs. {{ data.total|floatformat:2 }}</td>
+          <td>{{ data.entry_count }}</td>
+          <td>
+            <a href="{% url 'user_detail_report' data.user.id %}" class="btn btn-warning btn-sm">View Report</a>
+          </td>
+          <td>
+            {% if data.approved %}
+              <button class="approved-btn">✅ Approved</button>
+            {% else %}
+              <span class="text-danger fw-bold">Pending</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
 
-    <!-- ✅ Toast after approval -->
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('approved') === 'true') {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: 'Expenses approved successfully!',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true
-            });
-            // Remove param from URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    </script>
+    <!-- Pagination Controls -->
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        {% if user_data.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ user_data.previous_page_number }}">Previous</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+
+        {% for page_num in user_data.paginator.page_range %}
+          {% if user_data.number == page_num %}
+            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {% if user_data.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ user_data.next_page_number }}">Next</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+
+    <!-- Team Section -->
+    <h3 class="mt-5 text-brown">Teams</h3>
+    {% for team in teams %}
+      <div class="team-card position-relative">
+        <form method="POST" action="{% url 'delete_team' team.id %}" onsubmit="return confirm('Are you sure you want to delete this team?');">
+          {% csrf_token %}
+          <button type="submit" class="position-absolute top-0 end-0 m-2 border-0 bg-transparent" title="Delete Team">
+            🗑️
+          </button>
+        </form>
+        <h5><strong>{{ team.name }}</strong></h5>
+        <p>Members: {{ team.members.all|join:", " }}</p>
+      </div>
+    {% empty %}
+      <p class="text-muted">No teams created yet.</p>
+    {% endfor %}
+
+    <!-- Team Modal -->
+    <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="modal-content">
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title" id="createTeamModalLabel">Create New Team</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              {{ team_form.name.label_tag }}<br>
+              {{ team_form.name }}<br><br>
+              {{ team_form.members.label_tag }}<br>
+              <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 6px;">
+                {{ team_form.members }}
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success">Save Team</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bootstrap JS (via CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 
+
+
+<!--
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <!-- Bootstrap CSS (via CDN) --
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #fffdeb;
+      font-family: Arial, sans-serif;
+    }
+
+    .brand {
+      font-weight: bold;
+      font-size: 24px;
+      color: #8B4513;
+    }
+
+    .logout-btn {
+      background-color: darkred;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+
+    .table thead {
+      background-color: #f2e5c4;
+    }
+
+    .approved-btn {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+    }
+
+    .team-card {
+      background: #fff;
+      border: 2px solid #c5b97e;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .delete-icon {
+      background: transparent;
+      border: none;
+      font-size: 18px;
+      color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar --
+  <nav class="d-flex justify-content-between align-items-center p-3 bg-warning">
+    <div class="brand">MY EXPENSES - Admin Panel</div>
+    <div>
+      <button class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#createTeamModal">+ Create Team</button>
+      <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <h2 class="text-brown mb-4">All Users & Reports</h2>
+
+    <!-- User Table --
+    <table class="table table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Total Expenses</th>
+          <th>Entries</th>
+          <th>Report</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for data in page_obj %}
+        <tr>
+          <td>{{ data.user.username }}</td>
+          <td>Rs. {{ data.total|floatformat:2 }}</td>
+          <td>{{ data.entry_count }}</td>
+          <td>
+            <a href="{% url 'user_detail_report' data.user.id %}" class="btn btn-warning btn-sm">View Report</a>
+          </td>
+          <td>
+            {% if data.approved %}
+              <button class="approved-btn">✅ Approved</button>
+            {% else %}
+              <span class="text-danger fw-bold">Pending</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Pagination --
+    <div class="d-flex justify-content-center mt-4">
+      <nav>
+        <ul class="pagination">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Previous</span>
+            </li>
+          {% endif %}
+
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+              <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+              </li>
+            {% else %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Next</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Team Section --
+    <h3 class="mt-5 text-brown">Teams</h3>
+    {% for team in teams %}
+      <div class="team-card position-relative">
+        <form method="POST" action="{% url 'delete_team' team.id %}" onsubmit="return confirm('Are you sure you want to delete this team?');">
+          {% csrf_token %}
+          <button type="submit" class="delete-icon position-absolute top-0 end-0 m-2" title="Delete Team">🗑️</button>
+        </form>
+        <h5><strong>{{ team.name }}</strong></h5>
+        <p>Members: {{ team.members.all|join:", " }}</p>
+      </div>
+    {% empty %}
+      <p class="text-muted">No teams created yet.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Team Modal --
+  <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form method="POST">
+        {% csrf_token %}
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title" id="createTeamModalLabel">Create New Team</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            {{ team_form.name.label_tag }}<br>
+            {{ team_form.name }}<br><br>
+
+            {{ team_form.members.label_tag }}<br>
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 6px;">
+              {{ team_form.members }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save Team</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS (via CDN) --
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>  -->
