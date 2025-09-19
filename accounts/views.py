@@ -273,13 +273,16 @@ def admin_dashboard(request):
 # views.py
 from django.core.paginator import Paginator
 from django.shortcuts import render
-from .models import Expense, Team, User
+from .models import Expense, Team
 from .forms import TeamForm
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 def admin_dashboard(request):
     users = User.objects.all()
+    
     user_data = []
-
     for user in users:
         expenses = Expense.objects.filter(user=user)
         total = sum(e.amount for e in expenses)
@@ -290,23 +293,25 @@ def admin_dashboard(request):
             'user': user,
             'total': total,
             'entry_count': entry_count,
-            'approved': all_approved
+            'approved': all_approved,
         })
 
-    # ✅ PAGINATE the FINAL LIST (user_data), not the queryset
-    paginator = Paginator(user_data, 5)  # 5 per page
+    paginator = Paginator(user_data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     teams = Team.objects.prefetch_related('members').all()
     team_form = TeamForm()
 
+    # 👇 This is the line you asked about  
+    all_users = User.objects.exclude(is_superuser=True)
+
     return render(request, 'accounts/admin_dashboard.html', {
-        'user_data': page_obj,      # ✅ now paginated
+        'user_data': page_obj,
         'teams': teams,
         'team_form': team_form,
+        'all_users': all_users,  # 👈 This line makes users available to the template
     })
-
 
 
 
@@ -423,7 +428,7 @@ def approve_expense(request, user_id):
 
 
 
-
+# delete team.
 from django.shortcuts import get_object_or_404, redirect
 from .models import Team
 from django.contrib import messages
@@ -437,6 +442,54 @@ def delete_team(request, team_id):
 
 
 
+from django.contrib.auth import get_user_model
+from django.shortcuts import redirect
+User = get_user_model()
+
+def make_admin(request):
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        user = User.objects.get(id=user_id)
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+    return redirect('admin_dashboard')
 
 
+# saving team
+"""
+from django.shortcuts import redirect
+from django.contrib.auth import get_user_model
+from .models import Team
+from django.views.decorators.http import require_POST
 
+
+@require_POST
+def create_team(request):
+    form = TeamForm(request.POST)
+    if form.is_valid():
+     team = form.save(commit=False)
+     team.team_lead = form.cleaned_data['team_lead']
+     team.save()
+     form.save_m2m()
+
+"""
+
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
+from .forms import TeamForm
+from .models import Team
+from django.contrib import messages  # ✅ import messages
+
+@require_POST
+def create_team(request):
+    form = TeamForm(request.POST)
+    if form.is_valid():
+        team = form.save(commit=False)
+        team.team_lead = form.cleaned_data['team_lead']
+        team.save()
+        form.save_m2m()
+        messages.success(request, f"✅ Team '{team.name}' has been created successfully!")
+    else:
+        messages.error(request, "❌ Failed to create team. Please check the form.")
+    return redirect('admin_dashboard')
