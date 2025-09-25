@@ -269,8 +269,8 @@ def admin_dashboard(request):
 """
 
 
-
-# views.py
+"""
+# admin _view
 from django.core.paginator import Paginator
 from django.shortcuts import render
 from .models import Expense, Team
@@ -311,6 +311,56 @@ def admin_dashboard(request):
         'teams': teams,
         'team_form': team_form,
         'all_users': all_users,  # 👈 This line makes users available to the template
+    })
+"""
+
+#admin_view new
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from .models import Expense, Team
+from .forms import TeamForm
+from django.contrib.auth import get_user_model
+from django.db.models import Q
+def admin_dashboard(request):
+    users = User.objects.all()
+
+    user_data = []
+    for user in users:
+        expenses = Expense.objects.filter(user=user)
+        total = sum(e.amount for e in expenses)
+        entry_count = expenses.count()
+        all_approved = not expenses.filter(is_approved=False).exists()
+
+        user_data.append({
+            'user': user,
+            'total': total,
+            'entry_count': entry_count,
+            'approved': all_approved,
+        })
+
+    paginator = Paginator(user_data, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    teams = Team.objects.prefetch_related('members').all()
+    team_form = TeamForm()
+
+    # ✅ Exclude users already in any team (member or lead)
+    assigned_users = set()
+    for team in teams:
+        assigned_users.update(team.members.all())
+        if team.team_lead:
+            assigned_users.add(team.team_lead)
+
+    eligible_members = User.objects.exclude(id__in=[u.id for u in assigned_users])
+    eligible_leads = eligible_members
+
+    return render(request, 'accounts/admin_dashboard.html', {
+        'user_data': page_obj,
+        'teams': teams,
+        'team_form': team_form,
+        'eligible_members': eligible_members,
+        'eligible_leads': eligible_leads,
     })
 
 
@@ -441,7 +491,7 @@ def delete_team(request, team_id):
     return redirect('admin_dashboard')
 
 
-
+#saving team
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 User = get_user_model()
@@ -474,12 +524,14 @@ def create_team(request):
      form.save_m2m()
 
 """
+# create team
 
 from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
 from .forms import TeamForm
 from .models import Team
 from django.contrib import messages  # ✅ import messages
+
 
 @require_POST
 def create_team(request):
@@ -492,4 +544,21 @@ def create_team(request):
         messages.success(request, f"✅ Team '{team.name}' has been created successfully!")
     else:
         messages.error(request, "❌ Failed to create team. Please check the form.")
+    return redirect('admin_dashboard')
+
+
+
+
+
+# remove member from team
+@require_POST
+def remove_team_members(request, team_id):
+    team = get_object_or_404(Team, id=team_id)
+    members_to_remove = request.POST.getlist('members_to_remove')
+
+    for member_username in members_to_remove:
+        user = User.objects.get(username=member_username)
+        team.members.remove(user)
+
+    messages.success(request, f"Selected members removed from team '{team.name}'.")
     return redirect('admin_dashboard')

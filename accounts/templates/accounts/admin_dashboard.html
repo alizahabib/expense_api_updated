@@ -1,9 +1,12 @@
+<!--
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -52,6 +55,22 @@
      margin: 10px 0;
      border-radius: 5px;
    }
+
+
+   .stylish-remove-btn {
+     font-weight: 500;
+     padding: 6px 14px;
+     border-radius: 25px;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .stylish-remove-btn:hover {
+     background-color: #dc3545;
+     color: white;
+     border-color: #dc3545;
+     transform: scale(1.03);
+ }
+
   </style>
 </head>
 <body>
@@ -64,6 +83,344 @@
            </div>
          {% endfor %}
       </div>
+   {% endif %}
+
+
+<nav class="d-flex justify-content-between align-items-center p-3 bg-warning">
+  <div class="brand">MY EXPENSES - Admin Panel</div>
+  <div>
+    <button class="btn btn-dark me-3" data-bs-toggle="modal" data-bs-target="#changeAdminModal">Change Admin</button>
+    <button class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#createTeamModal">+ Create Team</button>
+    <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h2 class="text-brown mb-4">All Users & Reports</h2>
+
+  <!-- USER TABLE ///
+  <table class="table table-bordered align-middle">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Total Expenses</th>
+        <th>Entries</th>
+        <th>Report</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for data in user_data %}
+      <tr>
+        <td>{{ data.user.username }}</td>
+        <td>Rs. {{ data.total|floatformat:2 }}</td>
+        <td>{{ data.entry_count }}</td>
+        <td>
+          <a href="{% url 'user_detail_report' data.user.id %}" class="btn btn-warning btn-sm">View Report</a>
+        <td>
+            {% if data.approved %}
+                 <span class="btn btn-success">✅ Approved</span>
+            {% else %}
+                <form method="POST" action="{% url 'approve_expense' data.user.id %}">
+                     {% csrf_token %}
+                     <button type="submit" class="btn btn-danger btn-sm">Approve</button>
+                </form>
+           {% endif %}
+       </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- PAGINATION CONTROLS ///
+  <nav>
+    <ul class="pagination justify-content-center">
+      {% if user_data.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ user_data.previous_page_number }}">Previous</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+
+      {% for page_num in user_data.paginator.page_range %}
+        {% if user_data.number == page_num %}
+          <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if user_data.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ user_data.next_page_number }}">Next</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <!-- TEAMS SECTION ///
+  <h3 class="mt-5 text-brown">Teams</h3>
+  {% for team in teams %}
+    <div class="team-card position-relative">
+        <!-- Remove Member Button and Modal Trigger ///
+        <!-- Remove Member Button and Modal Trigger ///
+        <button type="button"
+              class="btn btn-outline-danger stylish-remove-btn position-absolute top-0 end-0 me-5 mt-2"
+              data-bs-toggle="modal"
+              data-bs-target="#removeMemberModal"
+              data-team-id="{{ team.id }}"
+              data-members="{{ team.members.all|join:', ' }}">
+          <i class="bi bi-person-x-fill me-1"></i> Remove Member
+        </button>
+ 
+
+
+      <form method="POST" action="{% url 'delete_team' team.id %}" onsubmit="return confirm('Are you sure?');">
+        {% csrf_token %}
+        <button type="submit" class="position-absolute top-0 end-0 m-2" title="Delete">🗑️</button>
+      </form>
+      <h5><strong>{{ team.name }}</strong></h5>
+      <p>Members: {{ team.members.all|join:", " }}</p>
+      <p><strong>Team Lead:</strong> {{ team.team_lead }}</p>
+
+
+    </div>
+  {% empty %}
+    <p class="text-muted">No teams created yet.</p>
+  {% endfor %}
+
+  <!-- CREATE TEAM MODAL ///
+  <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form method="POST" action="{% url 'create_team' %}">
+        {% csrf_token %}
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title">Create New Team</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            {{ team_form.name.label_tag }}<br>
+            {{ team_form.name }}<br><br>
+
+            {{ team_form.members.label_tag }}<br>
+            <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:6px;">
+              {{ team_form.members }}
+            </div>
+          </div>
+
+          <label>Team Lead:</label>
+          <select name="team_lead" class="form-control">
+             {% for user in all_users %}
+             <option value="{{ user.id }}">{{ user.username }}</option>
+             {% endfor %}
+          </select>
+
+
+
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save Team</button>
+          </div>
+                   
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CHANGE ADMIN MODAL ///
+  <div class="modal fade" id="changeAdminModal" tabindex="-1" aria-labelledby="changeAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form method="POST" action="{% url 'make_admin' %}">
+        {% csrf_token %}
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Change Admin</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <label for="userSelect" class="form-label">Select User to Promote as Admin:</label>
+            <select name="user_id" id="userSelect" class="form-select" required>
+              {% for user in all_users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-dark">Make Admin</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+   <!-- Remove Member Modal ///
+   <div class="modal fade" id="removeMemberModal" tabindex="-1" aria-labelledby="removeMemberModalLabel" aria-hidden="true">
+     <div class="modal-dialog">
+       <form method="POST" id="removeMemberForm">
+         {% csrf_token %}
+         <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+              <h5 class="modal-title" id="removeMemberModalLabel">Remove Team Members</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div id="memberCheckboxes">
+                <!-- checkboxes will be injected via JS //
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-warning">Remove Selected</button>
+            </div>
+         </div>
+       </form>
+    </div>
+ </div>
+
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+<script>
+  // Auto-dismiss the Django alert after 3 seconds
+  setTimeout(function () {
+    const alert = document.getElementById("django-alert");
+    if (alert) {
+      // Fade it out
+      alert.classList.remove("show");
+      alert.classList.add("hide");
+      // Remove it after transition
+      setTimeout(() => alert.remove(), 300);
+    }
+  }, 3000);
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const modal = document.getElementById('removeMemberModal');
+  const form = document.getElementById('removeMemberForm');
+  const checkboxesContainer = document.getElementById('memberCheckboxes');
+
+  modal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const members = button.getAttribute('data-members').split(', ');
+    const teamId = button.getAttribute('data-team-id');
+
+    form.action = `/accounts/remove-members/${teamId}/`;  // Adjust URL as needed
+
+    // Clear old checkboxes
+    checkboxesContainer.innerHTML = '';
+
+    members.forEach(member => {
+      const checkboxHTML = `
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="members_to_remove" value="${member}" id="${member}">
+          <label class="form-check-label" for="${member}">${member}</label>
+        </div>`;
+      checkboxesContainer.insertAdjacentHTML('beforeend', checkboxHTML);
+    });
+  });
+});
+</script>
+
+
+</html>
+-->
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <!-- SweetAlert2 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"> 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    body {
+      background-color: #fffdeb;
+      font-family: Arial, sans-serif;
+    }
+    .brand {
+      font-weight: bold;
+      font-size: 24px;
+      color: #8B4513;
+    }
+    .logout-btn {
+      background-color: darkred;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+    .table thead {
+      background-color: #f2e5c4;
+    }
+    .approved-btn {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+    }
+    .team-card {
+      background: #fff;
+      border: 2px solid #c5b97e;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+
+   .custom-alert {
+     background: #d1e7dd;
+     color: #0f5132;
+     border-left: 6px solid #198754;
+     padding: 15px;
+     margin: 10px 0;
+     border-radius: 5px;
+   }
+
+
+   .stylish-remove-btn {
+     font-weight: 500;
+     padding: 6px 14px;
+     border-radius: 25px;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .stylish-remove-btn:hover {
+     background-color: #dc3545;
+     color: white;
+     border-color: #dc3545;
+     transform: scale(1.03);
+ }
+
+  </style>
+</head>
+<body>
+    {% if messages %}
+     <div id="django-alert-container" class="position-fixed top-0 start-50 translate-middle-x mt-3 z-index-9999" style="z-index: 1055;">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg" role="alert" id="django-alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+     </div>
    {% endif %}
 
 
@@ -115,7 +472,6 @@
   </table>
 
   <!-- PAGINATION CONTROLS -->
-  <nav>
     <ul class="pagination justify-content-center">
       {% if user_data.has_previous %}
         <li class="page-item"><a class="page-link" href="?page={{ user_data.previous_page_number }}">Previous</a></li>
@@ -143,10 +499,26 @@
   <h3 class="mt-5 text-brown">Teams</h3>
   {% for team in teams %}
     <div class="team-card position-relative">
+        <!-- Remove Member Button and Modal Trigger -->
+        <!-- Remove Member Button and Modal Trigger -->
+        <button type="button"
+              class="btn btn-outline-danger stylish-remove-btn position-absolute top-0 end-0 me-5 mt-2"
+              data-bs-toggle="modal"
+              data-bs-target="#removeMemberModal"
+              data-team-id="{{ team.id }}"
+              data-members="{{ team.members.all|join:', ' }}">
+          <i class="bi bi-person-x-fill me-1"></i> Remove Member
+        </button>
+ 
+ 
+       
       <form method="POST" action="{% url 'delete_team' team.id %}" onsubmit="return confirm('Are you sure?');">
         {% csrf_token %}
-        <button type="submit" class="position-absolute top-0 end-0 m-2" title="Delete">🗑️</button>
-      </form>
+        <button type="submit" class="position-absolute top-0 end-0 m-2" data-url="{% url 'delete_team' team.id %}" title="Delete">🗑️</button>
+      </form> 
+
+      
+
       <h5><strong>{{ team.name }}</strong></h5>
       <p>Members: {{ team.members.all|join:", " }}</p>
       <p><strong>Team Lead:</strong> {{ team.team_lead }}</p>
@@ -171,18 +543,27 @@
             {{ team_form.name.label_tag }}<br>
             {{ team_form.name }}<br><br>
 
-            {{ team_form.members.label_tag }}<br>
+            <label for="id_members">Members:</label>
             <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:6px;">
-              {{ team_form.members }}
+             {% for user in eligible_members %}
+               <div class="form-check">
+                  <input class="form-check-input member-checkbox" type="checkbox" name="members" value="{{ user.id }}" id="user_{{ user.id }}">
+
+                  <label class="form-check-label" for="user_{{ user.id }}">{{ user.username }}</label>
+               </div>
+             {% endfor %}
             </div>
+
           </div>
 
-          <label>Team Lead:</label>
-          <select name="team_lead" class="form-control">
-             {% for user in all_users %}
-             <option value="{{ user.id }}">{{ user.username }}</option>
-             {% endfor %}
+          <label for="team_lead">Team Lead:</label>
+          <select name="team_lead" class="form-control" id="team_lead_select" required>
+            <option value="" selected disabled>------------</option>
+            {% for user in eligible_leads %}
+                 <option value="{{ user.id }}" data-id="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
           </select>
+
 
 
 
@@ -190,6 +571,8 @@
           <div class="modal-footer">
             <button type="submit" class="btn btn-success">Save Team</button>
           </div>
+                   
+
         </div>
       </form>
     </div>
@@ -221,10 +604,35 @@
     </div>
   </div>
 
+
+   <!-- Remove Member Modal -->
+   <div class="modal fade" id="removeMemberModal" tabindex="-1" aria-labelledby="removeMemberModalLabel" aria-hidden="true">
+     <div class="modal-dialog">
+       <form method="POST" id="removeMemberForm">
+         {% csrf_token %}
+         <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+              <h5 class="modal-title" id="removeMemberModalLabel">Remove Team Members</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div id="memberCheckboxes">
+                <!-- checkboxes will be injected via JS -->
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-warning">Remove Selected</button>
+            </div>
+         </div>
+       </form>
+    </div>
+ </div>
+
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+
 
 <script>
   // Auto-dismiss the Django alert after 3 seconds
@@ -240,4 +648,163 @@
   }, 3000);
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const modal = document.getElementById('removeMemberModal');
+  const form = document.getElementById('removeMemberForm');
+  const checkboxesContainer = document.getElementById('memberCheckboxes');
+
+  modal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const members = button.getAttribute('data-members').split(', ');
+    const teamId = button.getAttribute('data-team-id');
+
+    form.action = `/accounts/remove-members/${teamId}/`;  // Adjust URL as needed
+
+    // Clear old checkboxes
+    checkboxesContainer.innerHTML = '';
+
+    members.forEach(member => {
+      const checkboxHTML = `
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="members_to_remove" value="${member}" id="${member}">
+          <label class="form-check-label" for="${member}">${member}</label>
+        </div>`;
+      checkboxesContainer.insertAdjacentHTML('beforeend', checkboxHTML);
+    });
+  });
+});
+</script>
+
+
+<!--for memebers dropdown-->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+    const teamLeadSelect = document.querySelector('select[name="team_lead"]');
+
+    function updateTeamLeadOptions() {
+      const selectedMemberIds = Array.from(memberCheckboxes)
+        .filter(checkbox => checkbox.checked)
+        .map(checkbox => checkbox.value);
+
+      Array.from(teamLeadSelect.options).forEach(option => {
+        if (selectedMemberIds.includes(option.value)) {
+          option.disabled = true;
+          option.style.display = 'none';
+        } else {
+          option.disabled = false;
+          option.style.display = 'block';
+        }
+      });
+    }
+
+    memberCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', updateTeamLeadOptions);
+    });
+
+    updateTeamLeadOptions(); // run once on load
+  });
+</script>
+
+ <!--for team lead's dropown -->
+<script>
+  const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+  const teamLeadSelect = document.querySelector('select[name="team_lead"]');
+
+  function updateMemberListBasedOnLead() {
+    const selectedLeadId = teamLeadSelect.value;
+
+    // Hide the selected team lead from members list
+    memberCheckboxes.forEach(cb => {
+      const container = cb.closest('.form-check');
+      if (cb.value === selectedLeadId && selectedLeadId !== "") {
+        container.style.display = 'none';
+        cb.checked = false;
+      } else {
+        container.style.display = '';
+      }
+    });
+  }
+
+  function updateLeadDropdownBasedOnMembers() {
+    const selectedMemberIds = Array.from(memberCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+
+    const options = teamLeadSelect.querySelectorAll('option');
+
+    options.forEach(opt => {
+      if (selectedMemberIds.includes(opt.value)) {
+        opt.style.display = 'none';
+        if (teamLeadSelect.value === opt.value) {
+          // Reset lead if it's now invalid
+          teamLeadSelect.value = "";
+        }
+      } else {
+        opt.style.display = '';
+      }
+    });
+  }
+
+  function hideSelectedLeadOptionItself() {
+    const selectedLeadId = teamLeadSelect.value;
+
+    teamLeadSelect.querySelectorAll('option').forEach(opt => {
+      // Only hide the selected option from the dropdown list (not the selected display)
+      if (opt.value === selectedLeadId && selectedLeadId !== "") {
+        opt.setAttribute('hidden', 'hidden');
+      } else {
+        opt.removeAttribute('hidden');
+      }
+    });
+  }
+
+  // Attach listeners
+  teamLeadSelect.addEventListener('change', () => {
+    updateMemberListBasedOnLead();
+    hideSelectedLeadOptionItself();
+  });
+
+  memberCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateLeadDropdownBasedOnMembers();
+      hideSelectedLeadOptionItself();  // In case user was removed from members and appears again
+    });
+  });
+
+  // Run on page load (for form reuse)
+  updateMemberListBasedOnLead();
+  updateLeadDropdownBasedOnMembers();
+  hideSelectedLeadOptionItself();
+</script>
+
+
+<script>
+  document.querySelectorAll('.delete-form').forEach(form => {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();  // stop the form from submitting immediately
+
+      const teamName = this.querySelector('.delete-btn').getAttribute('data-team-name');
+
+      Swal.fire({
+        title: `Delete "${teamName}"?`,
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        reverseButtons: true,
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.submit();  // now submit the form
+        }
+      });
+    });
+  });
+</script>
+
+
 </html>
+

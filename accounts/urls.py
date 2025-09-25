@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, logout_view, dashboard, ExpenseListAPI ,create_team,make_admin,approve_expense,delete_team, update_expense_dates, user_report, admin_login_view, admin_dashboard, user_detail_report
+from .views import register_view, login_view, logout_view, dashboard, ExpenseListAPI,remove_team_members ,create_team,make_admin,approve_expense,delete_team, update_expense_dates, user_report, admin_login_view, admin_dashboard, user_detail_report
 
 urlpatterns = [
     path('register/', register_view, name='register'),
@@ -19,6 +19,8 @@ urlpatterns = [
     path('delete-team/<int:team_id>/', delete_team, name='delete_team'),
     path('make-admin/',make_admin, name='make_admin'),
     path('create-team/',create_team, name='create_team'),
+    path('remove-members/<int:team_id>/',remove_team_members, name='remove_team_members'),
+
 
 
     
