@@ -340,13 +340,20 @@ document.addEventListener('DOMContentLoaded', function () {
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
-  <!-- SweetAlert2 CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"> 
+  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  <!-- SweetAlert2 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
   <style>
     body {
@@ -408,6 +415,8 @@ document.addEventListener('DOMContentLoaded', function () {
      border-color: #dc3545;
      transform: scale(1.03);
  }
+
+ 
 
   </style>
 </head>
@@ -512,10 +521,16 @@ document.addEventListener('DOMContentLoaded', function () {
  
  
        
-      <form method="POST" action="{% url 'delete_team' team.id %}" onsubmit="return confirm('Are you sure?');">
-        {% csrf_token %}
-        <button type="submit" class="position-absolute top-0 end-0 m-2" data-url="{% url 'delete_team' team.id %}" title="Delete">🗑️</button>
-      </form> 
+      
+      <form method="POST" action="{% url 'delete_team' team.id %}" class="delete-form" data-team-name="{{ team.name }}">
+       {% csrf_token %}
+       <button type="submit" class="position-absolute top-0 end-0 m-2 delete-btn" title="Delete">
+         🗑️
+       </button>
+      </form>
+
+
+
 
       
 
@@ -545,7 +560,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             <label for="id_members">Members:</label>
             <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:6px;">
-             {% for user in eligible_members %}
+              
+              
+              {% for user in eligible_members %}
                <div class="form-check">
                   <input class="form-check-input member-checkbox" type="checkbox" name="members" value="{{ user.id }}" id="user_{{ user.id }}">
 
@@ -632,7 +649,23 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-
+<!--  toast alert
+{% if messages %}
+<script>
+{% for message in messages %}
+Swal.fire({
+icon: 'success',
+title: '{{ message|escapejs }}',
+toast: true,
+position: 'top-end',
+showConfirmButton: false,
+timer: 2000,
+timerProgressBar: true
+});
+{% endfor %}
+</script>
+{% endif %} -->
+</body>
 
 <script>
   // Auto-dismiss the Django alert after 3 seconds
@@ -779,13 +812,13 @@ document.addEventListener('DOMContentLoaded', function () {
   hideSelectedLeadOptionItself();
 </script>
 
-
+<!-- Delete button alert-->
 <script>
   document.querySelectorAll('.delete-form').forEach(form => {
     form.addEventListener('submit', function (e) {
-      e.preventDefault();  // stop the form from submitting immediately
+      e.preventDefault();  // Prevent default form submission
 
-      const teamName = this.querySelector('.delete-btn').getAttribute('data-team-name');
+      const teamName = form.getAttribute('data-team-name');
 
       Swal.fire({
         title: `Delete "${teamName}"?`,
@@ -796,14 +829,53 @@ document.addEventListener('DOMContentLoaded', function () {
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Yes, delete it!',
         reverseButtons: true,
+        customClass: {
+        popup: 'swal2-sm',        // 👈 custom size
+        title: 'swal2-title-sm',  // 👈 smaller title
+        htmlContainer: 'swal2-text-sm',
+        confirmButton: 'btn btn-danger btn-sm',
+        cancelButton: 'btn btn-secondary btn-sm'
+      },
+      buttonsStyling: true
       }).then((result) => {
         if (result.isConfirmed) {
-          this.submit();  // now submit the form
+          form.submit();  // Submit only if confirmed
         }
       });
     });
   });
 </script>
+ 
+
+<!-- prevent selecting all memebers.-->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+    const teamLeadSelect = document.querySelector('select[name="team_lead"]');
+
+    function enforceAtLeastOneRemainingForLead() {
+      const checked = Array.from(memberCheckboxes).filter(cb => cb.checked);
+      const unchecked = Array.from(memberCheckboxes).filter(cb => !cb.checked);
+
+      // Disable remaining unchecked if only one is left
+      if (checked.length >= memberCheckboxes.length - 1) {
+        unchecked.forEach(cb => cb.disabled = true);
+      } else {
+        memberCheckboxes.forEach(cb => cb.disabled = false);
+      }
+    }
+
+    // Add event listeners to enforce rule
+    memberCheckboxes.forEach(cb => {
+      cb.addEventListener('change', enforceAtLeastOneRemainingForLead);
+    });
+
+    // Initial check on page load
+    enforceAtLeastOneRemainingForLead();
+  });
+</script>
+
+
 
 
 </html>
