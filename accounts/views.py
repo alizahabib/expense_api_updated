@@ -200,119 +200,7 @@ class ExpenseListAPI(APIView):
         return Response(serializer.data)
     
         
-"""
-from django.contrib.auth.decorators import user_passes_test
-from django.shortcuts import render, get_object_or_404
-from django.db.models import Sum
-from django.contrib.auth import get_user_model
-from .models import Expense
 
-User = get_user_model()
-
-@user_passes_test(lambda u: u.is_superuser)
-def admin_dashboard(request):
-    users = User.objects.all()
-    user_reports = []
-
-    for user in users:
-        expenses = Expense.objects.filter(user=user)
-        total = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
-        user_reports.append({
-            'user': user,
-            'total_expenses': total,
-            'expense_count': expenses.count(),
-        })
-
-    return render(request, 'accounts/admin_dashboard.html', {
-        'user_reports': user_reports
-    })
-
-"""
-
-"""
-from datetime import date
-from django.db.models import Sum
-from django.contrib.auth.decorators import user_passes_test
-from django.contrib.auth import get_user_model
-from django.shortcuts import render
-from .models import Expense
-
-User = get_user_model()
-
-@user_passes_test(lambda u: u.is_superuser)
-def admin_dashboard(request):
-    today = date.today()
-    users = User.objects.all()
-    user_reports = []
-
-    for user in users:
-        all_expenses = Expense.objects.filter(user=user)
-
-        approved_expenses = all_expenses.filter(is_approved=True)
-        total = approved_expenses.aggregate(Sum('amount'))['amount__sum'] or 0
-        count = approved_expenses.count()
-
-        # Show approve button if user has any past-dated unapproved expense
-        has_past_unapproved = all_expenses.filter(is_approved=False, date__lt=today).exists()
-
-        user_reports.append({
-            'user': user,
-            'total_expenses': total,
-            'expense_count': count,
-            'show_approve': has_past_unapproved,
-        })
-
-    return render(request, 'accounts/admin_dashboard.html', {
-        'user_reports': user_reports
-    })
-
-"""
-
-
-"""
-# admin _view
-from django.core.paginator import Paginator
-from django.shortcuts import render
-from .models import Expense, Team
-from .forms import TeamForm
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-def admin_dashboard(request):
-    users = User.objects.all()
-    
-    user_data = []
-    for user in users:
-        expenses = Expense.objects.filter(user=user)
-        total = sum(e.amount for e in expenses)
-        entry_count = expenses.count()
-        all_approved = not expenses.filter(is_approved=False).exists()
-
-        user_data.append({
-            'user': user,
-            'total': total,
-            'entry_count': entry_count,
-            'approved': all_approved,
-        })
-
-    paginator = Paginator(user_data, 5)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    teams = Team.objects.prefetch_related('members').all()
-    team_form = TeamForm()
-
-    # 👇 This is the line you asked about  
-    all_users = User.objects.exclude(is_superuser=True)
-
-    return render(request, 'accounts/admin_dashboard.html', {
-        'user_data': page_obj,
-        'teams': teams,
-        'team_form': team_form,
-        'all_users': all_users,  # 👈 This line makes users available to the template
-    })
-"""
 
 #admin_view new
 from django.core.paginator import Paginator
@@ -464,17 +352,76 @@ def update_expense_dates(request, user_id):
 
 # to hold the expense record when the flag is FALSE before approving.
 
-from django.views.decorators.http import require_POST
-from django.shortcuts import get_object_or_404, redirect
-from .models import Expense
-from datetime import date
 
+
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_POST
+from datetime import date
+from .models import Expense
+"""
+@require_POST
+def approve_expense(request, user_id):
+    today = date.today()
+
+    # Approve only past expenses
+    updated_count = Expense.objects.filter(
+        user_id=user_id,
+        is_approved=False,
+        date__lt=today
+    ).update(is_approved=True)
+
+    # Get user info
+    User = get_user_model()
+    user = get_object_or_404(User, id=user_id)
+    
+
+    
+    print(">>> DEBUG: Approving expenses for:", user.username, user.email)
+    print(">>> DEBUG: Updated count:", updated_count)
+
+    # Send email to user always (chahe record update ho ya pehle se approved ho)
+    send_mail(
+        subject='Your Expenses Are Approved!',
+        message=f"Hello {user.username},\n\nYour expenses have been approved by the admin.",
+        from_email='admin@myexpenses.com',  # match with DEFAULT_FROM_EMAIL
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+    
+    print(">>> DEBUG: Email sent to:", user.email)
+
+    return redirect('/accounts/admin-dashboard/?approved=true')
+"""
 
 @require_POST
 def approve_expense(request, user_id):
     today = date.today()
-    Expense.objects.filter(user_id=user_id, is_approved=False, date__lt=today).update(is_approved=True)
-    return redirect('/accounts/admin-dashboard/?approved=true')
+
+    updated_count = Expense.objects.filter(
+        user_id=user_id,
+        is_approved=False,
+        date__lt=today
+    ).update(is_approved=True)
+
+    # Get user info
+    User = get_user_model()
+    user = get_object_or_404(User, id=user_id)
+
+    # Send email to user
+    send_mail(
+        subject="Your Expenses Are Approved!",
+        message=f"Hello {user.username},\n\nYour expenses have been approved by the admin.",
+        from_email="admin@myexpenses.com",   # or use DEFAULT_FROM_EMAIL
+        recipient_list=[user.email],         # this is where YOPmail works!
+        fail_silently=False,
+    )
+
+    return redirect("/accounts/admin-dashboard/?approved=true")
+
+
+
 
 
 
@@ -531,8 +478,53 @@ from django.views.decorators.http import require_POST
 from .forms import TeamForm
 from .models import Team
 from django.contrib import messages  # ✅ import messages
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+
+@require_POST
+def create_team(request):
+    form = TeamForm(request.POST)
+    if form.is_valid():
+        team = form.save(commit=False)
+        team.team_lead = form.cleaned_data['team_lead']
+        team.save()
+        form.save_m2m()   # members relation save
+
+        # 🔹 Get Team Lead and Members
+        lead = team.team_lead
+        members = team.members.all()
+
+        # 🔹 Send email to Team Lead
+        if lead and lead.email:
+            send_mail(
+                subject="You are assigned as Team Lead!",
+                message=f"Hello {lead.username},\n\nYou are now the Team Lead of '{team.name}'.",
+                from_email="admin@myexpenses.com",
+                recipient_list=[lead.email],
+                fail_silently=False,
+            )
+
+        # 🔹 Send email to Team Members
+        for member in members:
+            if member.email:   # avoid empty emails
+                send_mail(
+                    subject="You have been added to a new Team",
+                    message=f"Hello {member.username},\n\nYou have been added to the team '{team.name}' under the lead {lead.username}.",
+                    from_email="admin@myexpenses.com",
+                    recipient_list=[member.email],
+                    fail_silently=False,
+                )
+
+        messages.success(request, f"✅ Team '{team.name}' has been created successfully!")
+    else:
+        messages.error(request, "❌ Failed to create team. Please check the form.")
+
+    return redirect('admin_dashboard')
 
 
+
+
+"""
 @require_POST
 def create_team(request):
     form = TeamForm(request.POST)
@@ -545,7 +537,7 @@ def create_team(request):
     else:
         messages.error(request, "❌ Failed to create team. Please check the form.")
     return redirect('admin_dashboard')
-
+"""
 
 
 
