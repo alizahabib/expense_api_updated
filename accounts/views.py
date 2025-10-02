@@ -413,8 +413,8 @@ def approve_expense(request, user_id):
     send_mail(
         subject="Your Expenses Are Approved!",
         message=f"Hello {user.username},\n\nYour expenses have been approved by the admin.",
-        from_email="admin@myexpenses.com",   # or use DEFAULT_FROM_EMAIL
-        recipient_list=[user.email],         # this is where YOPmail works!
+        from_email="alizahabib12345@gmail.com",   #  DEFAULT_FROM_EMAIL
+        recipient_list=[user.email],         # this is where YOP mail works!
         fail_silently=False,
     )
 
@@ -499,7 +499,7 @@ def create_team(request):
             send_mail(
                 subject="You are assigned as Team Lead!",
                 message=f"Hello {lead.username},\n\nYou are now the Team Lead of '{team.name}'.",
-                from_email="admin@myexpenses.com",
+                from_email="alizahabib12345@gmail.com",
                 recipient_list=[lead.email],
                 fail_silently=False,
             )
@@ -508,9 +508,9 @@ def create_team(request):
         for member in members:
             if member.email:   # avoid empty emails
                 send_mail(
-                    subject="You have been added to a new Team",
-                    message=f"Hello {member.username},\n\nYou have been added to the team '{team.name}' under the lead {lead.username}.",
-                    from_email="admin@myexpenses.com",
+                    subject="You have been added to a New Team",
+                    message=f"Hello {member.username},\n\nYou have been added to the team '{team.name}' under the Team lead {lead.username}.",
+                    from_email="alizahabib12345@gmail.com",
                     recipient_list=[member.email],
                     fail_silently=False,
                 )

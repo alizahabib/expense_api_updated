@@ -415,8 +415,52 @@ document.addEventListener('DOMContentLoaded', function () {
      border-color: #dc3545;
      transform: scale(1.03);
  }
-
  
+  .chat-window { 
+    background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; width:300px; 
+   }
+   .msg { margin:5px 0; padding:5px; border-radius:6px; }
+   .sent { background:#d1f7c4; text-align:right; }
+   .received { background:#f1f1f1; text-align:left; }
+
+
+  .team-card {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+/* Row for each member */
+.member-row {
+  display: flex;
+  justify-content: space-between; /* Name left, button right */
+  align-items: center;
+  margin: 8px 0;
+}
+
+.chat-btn {
+  background: purple;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.chat-btn:hover {
+  background: darkviolet;
+}
+
+.chat-btn.lead {
+  background: teal;
+}
+
+.chat-btn.lead:hover {
+  background: darkcyan;
+}
 
   </style>
 </head>
@@ -529,20 +573,41 @@ document.addEventListener('DOMContentLoaded', function () {
        </button>
       </form>
 
-
-
-
-      
-
       <h5><strong>{{ team.name }}</strong></h5>
-      <p>Members: {{ team.members.all|join:", " }}</p>
+      <!--<p>Members: {{ team.members.all|join:", " }}</p>-->
+      <p><strong>Members:</strong></p>
+      <ol>
+        {% for member in team.members.all %}
+         <li class="member-row">
+           <span>{{ forloop.counter }}. {{ member.username }}</span>
+           <button class="chat-btn" onclick="openChat({{ member.id }}, '{{ member.username }}')">💬 Chat</button>
+         </li>
+        {% endfor %}
+     </ol>
+
       <p><strong>Team Lead:</strong> {{ team.team_lead }}</p>
+      <button class="chat-btn lead" onclick="openChat({{ team.team_lead.id }}, '{{ team.team_lead.username }}')">💬 Chat with Lead</button>
+  
 
 
     </div>
   {% empty %}
     <p class="text-muted">No teams created yet.</p>
   {% endfor %}
+
+
+  <!-- Chat Box Container (empty by default, JS se fill hoga) -->
+  <!-- Floating Chat Box (Hidden by default) -->
+  <div id="chatWindow" style="display:none; border:1px solid #ccc; border-radius:8px; padding:10px; width:300px; background:#fff; position:fixed; bottom:20px; right:20px; box-shadow:0 0 10px rgba(0,0,0,0.2); z-index:999;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h4 id="chatWith">Chat</h4>
+      <button onclick="closeChat()" style="background:red; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;">X</button>
+   </div>
+   <div id="chatMessages" style="height:200px; overflow-y:auto; border:1px solid #eee; margin:10px 0; padding:5px;"></div>
+   <input type="text" id="chatInput" placeholder="Type a message..." style="width:75%; padding:5px;" />
+   <button onclick="sendChat()" style="background:purple; color:white; border:none; border-radius:4px; padding:5px 10px; cursor:pointer;">Send</button>
+  </div>
+
 
   <!-- CREATE TEAM MODAL -->
   <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
@@ -873,6 +938,92 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initial check on page load
     enforceAtLeastOneRemainingForLead();
   });
+</script>
+
+
+ <!-- ////  for chat  ////-->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } 
+    from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+  // Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRC4aoMiVVMrTF8zhyb77VeDObjyVSeY4",
+    authDomain: "my-expenses-chat.firebaseapp.com",
+    projectId: "my-expenses-chat",
+    storageBucket: "my-expenses-chat.firebasestorage.app",
+    messagingSenderId: "112414536425",
+    appId: "1:112414536425:web:310af2bd54389763a73678",
+    measurementId: "G-NXWEHNZKV2"
+  };
+
+  // Init Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Current user (Django se dynamic inject hoga)
+  const currentUserId = Number({{ request.user.id }});   // ✅ int for DB
+  const currentUserName = "{{ request.user.username }}"; // ✅ string for display
+
+  // Chat state
+  let currentReceiverId = null;
+  let currentReceiverName = null;
+
+  // ✅ Open chat box
+  window.openChat = function(receiverId, receiverName) {
+    currentReceiverId = Number(receiverId);   // DB ke liye int
+    currentReceiverName = receiverName;       // UI ke liye string
+
+    document.getElementById("chatWith").innerText = "Chat with " + receiverName;
+    document.getElementById("chatWindow").style.display = "block";
+
+    listenMessages(currentUserId, currentReceiverId);
+  };
+
+  // ✅ Close chat box
+  window.closeChat = function() {
+    document.getElementById("chatWindow").style.display = "none";
+  };
+
+  // ✅ Send Message
+  window.sendChat = async function() {
+    const input = document.getElementById("chatInput");
+    const text = input.value.trim();
+    if (text !== "") {
+      await addDoc(collection(db, "messages"), {
+        SenderId: currentUserId,          // int
+        ReceiverId: currentReceiverId,    // int
+        text: text,
+        timestamp: serverTimestamp()
+      });
+      input.value = "";
+    }
+  };
+
+  // ✅ Listen for messages
+  function listenMessages(senderId, receiverId) {
+    const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+    onSnapshot(q, (snapshot) => {
+      const chatBox = document.getElementById("chatMessages");
+      chatBox.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const msg = doc.data();
+
+        // Sirf relevant messages dikhane ke liye
+        if (
+          (msg.SenderId === senderId && msg.ReceiverId === receiverId) ||
+          (msg.SenderId === receiverId && msg.ReceiverId === senderId)
+        ) {
+          // ✅ Agar message current user se aya to uska naam
+          const displayName = msg.SenderId === senderId ? currentUserName : currentReceiverName;
+
+          chatBox.innerHTML += `<p><b>${displayName}:</b> ${msg.text}</p>`;
+        }
+      });
+      chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll
+    });
+  }
 </script>
 
 
