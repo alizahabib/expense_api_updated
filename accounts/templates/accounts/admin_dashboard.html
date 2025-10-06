@@ -1,339 +1,3 @@
-<!--
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-  
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <style>
-    body {
-      background-color: #fffdeb;
-      font-family: Arial, sans-serif;
-    }
-    .brand {
-      font-weight: bold;
-      font-size: 24px;
-      color: #8B4513;
-    }
-    .logout-btn {
-      background-color: darkred;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      font-weight: bold;
-      border-radius: 6px;
-    }
-    .table thead {
-      background-color: #f2e5c4;
-    }
-    .approved-btn {
-      background-color: green;
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 5px;
-    }
-    .team-card {
-      background: #fff;
-      border: 2px solid #c5b97e;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 15px;
-    }
-
-
-   .custom-alert {
-     background: #d1e7dd;
-     color: #0f5132;
-     border-left: 6px solid #198754;
-     padding: 15px;
-     margin: 10px 0;
-     border-radius: 5px;
-   }
-
-
-   .stylish-remove-btn {
-     font-weight: 500;
-     padding: 6px 14px;
-     border-radius: 25px;
-    transition: all 0.3s ease-in-out;
-  }
-
-  .stylish-remove-btn:hover {
-     background-color: #dc3545;
-     color: white;
-     border-color: #dc3545;
-     transform: scale(1.03);
- }
-
-  </style>
-</head>
-<body>
-    {% if messages %}
-      <div id="django-alert-container" class="position-fixed top-0 start-50 translate-middle-x mt-3 z-index-9999" style="z-index: 1055;">
-         {% for message in messages %}
-           <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg" role="alert" id="django-alert">
-             {{ message }}
-             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-           </div>
-         {% endfor %}
-      </div>
-   {% endif %}
-
-
-<nav class="d-flex justify-content-between align-items-center p-3 bg-warning">
-  <div class="brand">MY EXPENSES - Admin Panel</div>
-  <div>
-    <button class="btn btn-dark me-3" data-bs-toggle="modal" data-bs-target="#changeAdminModal">Change Admin</button>
-    <button class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#createTeamModal">+ Create Team</button>
-    <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
-  </div>
-</nav>
-
-<div class="container mt-4">
-  <h2 class="text-brown mb-4">All Users & Reports</h2>
-
-  <!-- USER TABLE ///
-  <table class="table table-bordered align-middle">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Total Expenses</th>
-        <th>Entries</th>
-        <th>Report</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for data in user_data %}
-      <tr>
-        <td>{{ data.user.username }}</td>
-        <td>Rs. {{ data.total|floatformat:2 }}</td>
-        <td>{{ data.entry_count }}</td>
-        <td>
-          <a href="{% url 'user_detail_report' data.user.id %}" class="btn btn-warning btn-sm">View Report</a>
-        <td>
-            {% if data.approved %}
-                 <span class="btn btn-success">✅ Approved</span>
-            {% else %}
-                <form method="POST" action="{% url 'approve_expense' data.user.id %}">
-                     {% csrf_token %}
-                     <button type="submit" class="btn btn-danger btn-sm">Approve</button>
-                </form>
-           {% endif %}
-       </td>
-
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <!-- PAGINATION CONTROLS ///
-  <nav>
-    <ul class="pagination justify-content-center">
-      {% if user_data.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page={{ user_data.previous_page_number }}">Previous</a></li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">Previous</span></li>
-      {% endif %}
-
-      {% for page_num in user_data.paginator.page_range %}
-        {% if user_data.number == page_num %}
-          <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
-        {% else %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a></li>
-        {% endif %}
-      {% endfor %}
-
-      {% if user_data.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ user_data.next_page_number }}">Next</a></li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">Next</span></li>
-      {% endif %}
-    </ul>
-  </nav>
-
-  <!-- TEAMS SECTION ///
-  <h3 class="mt-5 text-brown">Teams</h3>
-  {% for team in teams %}
-    <div class="team-card position-relative">
-        <!-- Remove Member Button and Modal Trigger ///
-        <!-- Remove Member Button and Modal Trigger ///
-        <button type="button"
-              class="btn btn-outline-danger stylish-remove-btn position-absolute top-0 end-0 me-5 mt-2"
-              data-bs-toggle="modal"
-              data-bs-target="#removeMemberModal"
-              data-team-id="{{ team.id }}"
-              data-members="{{ team.members.all|join:', ' }}">
-          <i class="bi bi-person-x-fill me-1"></i> Remove Member
-        </button>
- 
-
-
-      <form method="POST" action="{% url 'delete_team' team.id %}" onsubmit="return confirm('Are you sure?');">
-        {% csrf_token %}
-        <button type="submit" class="position-absolute top-0 end-0 m-2" title="Delete">🗑️</button>
-      </form>
-      <h5><strong>{{ team.name }}</strong></h5>
-      <p>Members: {{ team.members.all|join:", " }}</p>
-      <p><strong>Team Lead:</strong> {{ team.team_lead }}</p>
-
-
-    </div>
-  {% empty %}
-    <p class="text-muted">No teams created yet.</p>
-  {% endfor %}
-
-  <!-- CREATE TEAM MODAL ///
-  <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <form method="POST" action="{% url 'create_team' %}">
-        {% csrf_token %}
-        <div class="modal-content">
-          <div class="modal-header bg-warning">
-            <h5 class="modal-title">Create New Team</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            {{ team_form.name.label_tag }}<br>
-            {{ team_form.name }}<br><br>
-
-            {{ team_form.members.label_tag }}<br>
-            <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:6px;">
-              {{ team_form.members }}
-            </div>
-          </div>
-
-          <label>Team Lead:</label>
-          <select name="team_lead" class="form-control">
-             {% for user in all_users %}
-             <option value="{{ user.id }}">{{ user.username }}</option>
-             {% endfor %}
-          </select>
-
-
-
-
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Save Team</button>
-          </div>
-                   
-
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- CHANGE ADMIN MODAL ///
-  <div class="modal fade" id="changeAdminModal" tabindex="-1" aria-labelledby="changeAdminModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <form method="POST" action="{% url 'make_admin' %}">
-        {% csrf_token %}
-        <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">Change Admin</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <label for="userSelect" class="form-label">Select User to Promote as Admin:</label>
-            <select name="user_id" id="userSelect" class="form-select" required>
-              {% for user in all_users %}
-                <option value="{{ user.id }}">{{ user.username }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-dark">Make Admin</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-
-   <!-- Remove Member Modal ///
-   <div class="modal fade" id="removeMemberModal" tabindex="-1" aria-labelledby="removeMemberModalLabel" aria-hidden="true">
-     <div class="modal-dialog">
-       <form method="POST" id="removeMemberForm">
-         {% csrf_token %}
-         <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-              <h5 class="modal-title" id="removeMemberModalLabel">Remove Team Members</h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <div id="memberCheckboxes">
-                <!-- checkboxes will be injected via JS //
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-warning">Remove Selected</button>
-            </div>
-         </div>
-       </form>
-    </div>
- </div>
-
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-<script>
-  // Auto-dismiss the Django alert after 3 seconds
-  setTimeout(function () {
-    const alert = document.getElementById("django-alert");
-    if (alert) {
-      // Fade it out
-      alert.classList.remove("show");
-      alert.classList.add("hide");
-      // Remove it after transition
-      setTimeout(() => alert.remove(), 300);
-    }
-  }, 3000);
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const modal = document.getElementById('removeMemberModal');
-  const form = document.getElementById('removeMemberForm');
-  const checkboxesContainer = document.getElementById('memberCheckboxes');
-
-  modal.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-    const members = button.getAttribute('data-members').split(', ');
-    const teamId = button.getAttribute('data-team-id');
-
-    form.action = `/accounts/remove-members/${teamId}/`;  // Adjust URL as needed
-
-    // Clear old checkboxes
-    checkboxesContainer.innerHTML = '';
-
-    members.forEach(member => {
-      const checkboxHTML = `
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="members_to_remove" value="${member}" id="${member}">
-          <label class="form-check-label" for="${member}">${member}</label>
-        </div>`;
-      checkboxesContainer.insertAdjacentHTML('beforeend', checkboxHTML);
-    });
-  });
-});
-</script>
-
-
-</html>
--->
-
-
-
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -341,20 +5,15 @@ document.addEventListener('DOMContentLoaded', function () {
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
   
+  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-  
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-
   <!-- SweetAlert2 JS -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
   <style>
     body {
       background-color: #fffdeb;
@@ -390,148 +49,293 @@ document.addEventListener('DOMContentLoaded', function () {
       padding: 15px;
       margin-bottom: 15px;
     }
+    .custom-alert {
+      background: #d1e7dd;
+      color: #0f5132;
+      border-left: 6px solid #198754;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .stylish-remove-btn {
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 25px;
+      transition: all 0.3s ease-in-out;
+    }
+    .stylish-remove-btn:hover {
+      background-color: #dc3545;
+      color: white;
+      border-color: #dc3545;
+      transform: scale(1.03);
+    }
+    .chat-window {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      width: 300px;
+    }
+    .msg {
+      margin: 5px 0;
+      padding: 5px;
+      border-radius: 6px;
+    }
+    .sent {
+      background: #d1f7c4;
+      text-align: right;
+    }
+    .received {
+      background: #f1f1f1;
+      text-align: left;
+    }
+    .team-card {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .member-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .chat-btn {
+      background: purple;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .chat-btn:hover {
+      background: darkviolet;
+    }
+    .chat-btn.lead {
+      background: teal;
+    }
+    .chat-btn.lead:hover {
+      background: darkcyan;
+    }
 
-
-   .custom-alert {
-     background: #d1e7dd;
-     color: #0f5132;
-     border-left: 6px solid #198754;
-     padding: 15px;
-     margin: 10px 0;
-     border-radius: 5px;
-   }
-
-
-   .stylish-remove-btn {
-     font-weight: 500;
-     padding: 6px 14px;
-     border-radius: 25px;
-    transition: all 0.3s ease-in-out;
-  }
-
-  .stylish-remove-btn:hover {
-     background-color: #dc3545;
-     color: white;
-     border-color: #dc3545;
-     transform: scale(1.03);
- }
- 
-  .chat-window { 
-    background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; width:300px; 
-   }
-   .msg { margin:5px 0; padding:5px; border-radius:6px; }
-   .sent { background:#d1f7c4; text-align:right; }
-   .received { background:#f1f1f1; text-align:left; }
-
-
-  .team-card {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 15px;
-  margin-bottom: 15px;
-}
-
-/* Row for each member */
-.member-row {
-  display: flex;
-  justify-content: space-between; /* Name left, button right */
-  align-items: center;
-  margin: 8px 0;
-}
-
-.chat-btn {
-  background: purple;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 5px 10px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.chat-btn:hover {
-  background: darkviolet;
-}
-
-.chat-btn.lead {
-  background: teal;
-}
-
-.chat-btn.lead:hover {
-  background: darkcyan;
-}
-
+    /* Floating chat button for admin */
+    #adminFloatingChatBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #6c3483;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      cursor: pointer;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    #adminFloatingChatBtn:hover {
+      background: #512d6d;
+    }
+    /* Chat panel styles */
+    #adminChatPanel {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 340px;
+      max-width: 96vw;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      z-index: 10000;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {from{opacity:0;} to{opacity:1;}}
+    #adminChatHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: #6c3483;
+      color: #fff;
+      font-size: 1rem;
+      border-top-left-radius: 14px;
+      border-top-right-radius: 14px;
+    }
+    #adminChatHeader .close-btn {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      font-size: 1.2em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 10px;
+    }
+    #adminUserList {
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 10px 18px 18px 18px;
+      background: #f9f9f9;
+    }
+    .admin-user-entry {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      color: #6c3483;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+    }
+    .admin-user-entry:hover {
+      background: #f3e6fa;
+    }
+    #adminChatWindow {
+      display: none;
+      flex-direction: column;
+      height: 340px;
+      background: #fff;
+    }
+    #adminChatMessages {
+      height: 220px;
+      overflow-y: auto;
+      padding: 10px 18px;
+      background: #f9f9f9;
+      font-size: 15px;
+      flex: 1;
+      border-bottom: 1px solid #eee;
+    }
+    .admin-msg {
+      margin-bottom: 8px;
+      padding: 7px 12px;
+      border-radius: 7px;
+      max-width: 80%;
+      word-break: break-word;
+      display: inline-block;
+      clear: both;
+    }
+    .admin-msg.sent {
+      background: #d1f7c4;
+      float: right;
+      text-align: right;
+    }
+    .admin-msg.received {
+      background: #f1f1f1;
+      float: left;
+      text-align: left;
+    }
+    #adminChatInputBox {
+      display: flex;
+      padding: 12px 18px;
+      background: #eee;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+    }
+    #adminChatInput {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      margin-right: 10px;
+      font-size: 15px;
+    }
+    #adminSendBtn {
+      background: #6c3483;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 20px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #adminSendBtn:hover {
+      background: #512d6d;
+    }
   </style>
 </head>
 <body>
-    {% if messages %}
-     <div id="django-alert-container" class="position-fixed top-0 start-50 translate-middle-x mt-3 z-index-9999" style="z-index: 1055;">
-        {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg" role="alert" id="django-alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-     </div>
-   {% endif %}
 
-
-<nav class="d-flex justify-content-between align-items-center p-3 bg-warning">
-  <div class="brand">MY EXPENSES - Admin Panel</div>
-  <div>
-    <button class="btn btn-dark me-3" data-bs-toggle="modal" data-bs-target="#changeAdminModal">Change Admin</button>
-    <button class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#createTeamModal">+ Create Team</button>
-    <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
-  </div>
-</nav>
-
-<div class="container mt-4">
-  <h2 class="text-brown mb-4">All Users & Reports</h2>
-
-  <!-- USER TABLE -->
-  <table class="table table-bordered align-middle">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Total Expenses</th>
-        <th>Entries</th>
-        <th>Report</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for data in user_data %}
-      <tr>
-        <td>{{ data.user.username }}</td>
-        <td>Rs. {{ data.total|floatformat:2 }}</td>
-        <td>{{ data.entry_count }}</td>
-        <td>
-          <a href="{% url 'user_detail_report' data.user.id %}" class="btn btn-warning btn-sm">View Report</a>
-        <td>
-            {% if data.approved %}
-                 <span class="btn btn-success">✅ Approved</span>
-            {% else %}
-                <form method="POST" action="{% url 'approve_expense' data.user.id %}">
-                     {% csrf_token %}
-                     <button type="submit" class="btn btn-danger btn-sm">Approve</button>
-                </form>
-           {% endif %}
-       </td>
-
-      </tr>
+  {% if messages %}
+    <div id="django-alert-container" class="position-fixed top-0 start-50 translate-middle-x mt-3 z-index-9999" style="z-index: 1055;">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg" role="alert" id="django-alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
       {% endfor %}
-    </tbody>
-  </table>
+    </div>
+  {% endif %}
 
-  <!-- PAGINATION CONTROLS -->
+  <nav class="d-flex justify-content-between align-items-center p-3 bg-warning">
+    <div class="brand">MY EXPENSES - Admin Panel</div>
+    <div>
+      <button class="btn btn-dark me-3" data-bs-toggle="modal" data-bs-target="#changeAdminModal">Change Admin</button>
+      <button class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#createTeamModal">+ Create Team</button>
+      <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <h2 class="text-brown mb-4">All Users & Reports</h2>
+    <!-- USER TABLE -->
+    <table class="table table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Total Expenses</th>
+          <th>Entries</th>
+          <th>Report</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for data in user_data %}
+        <tr>
+          <td>{{ data.user.username }}</td>
+          <td>Rs. {{ data.total|floatformat:2 }}</td>
+          <td>{{ data.entry_count }}</td>
+          <td>
+            <a href="{% url 'user_detail_report' data.user.id %}" class="btn btn-warning btn-sm">View Report</a>
+          <td>
+            {% if data.approved %}
+              <span class="btn btn-success">✅ Approved</span>
+            {% else %}
+              <form method="POST" action="{% url 'approve_expense' data.user.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Approve</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- PAGINATION CONTROLS -->
     <ul class="pagination justify-content-center">
       {% if user_data.has_previous %}
         <li class="page-item"><a class="page-link" href="?page={{ user_data.previous_page_number }}">Previous</a></li>
       {% else %}
         <li class="page-item disabled"><span class="page-link">Previous</span></li>
       {% endif %}
-
       {% for page_num in user_data.paginator.page_range %}
         {% if user_data.number == page_num %}
           <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
@@ -539,160 +343,131 @@ document.addEventListener('DOMContentLoaded', function () {
           <li class="page-item"><a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a></li>
         {% endif %}
       {% endfor %}
-
       {% if user_data.has_next %}
         <li class="page-item"><a class="page-link" href="?page={{ user_data.next_page_number }}">Next</a></li>
       {% else %}
         <li class="page-item disabled"><span class="page-link">Next</span></li>
       {% endif %}
     </ul>
-  </nav>
+    </nav>
 
-  <!-- TEAMS SECTION -->
-  <h3 class="mt-5 text-brown">Teams</h3>
-  {% for team in teams %}
+    <!-- TEAMS SECTION -->
+    <h3 class="mt-5 text-brown">Teams</h3>
+    {% for team in teams %}
     <div class="team-card position-relative">
-        <!-- Remove Member Button and Modal Trigger -->
-        <!-- Remove Member Button and Modal Trigger -->
-        <button type="button"
-              class="btn btn-outline-danger stylish-remove-btn position-absolute top-0 end-0 me-5 mt-2"
-              data-bs-toggle="modal"
-              data-bs-target="#removeMemberModal"
-              data-team-id="{{ team.id }}"
-              data-members="{{ team.members.all|join:', ' }}">
-          <i class="bi bi-person-x-fill me-1"></i> Remove Member
-        </button>
- 
- 
-       
-      
+      <!-- Remove Member Button and Modal Trigger -->
+      <button type="button"
+        class="btn btn-outline-danger stylish-remove-btn position-absolute top-0 end-0 me-5 mt-2"
+        data-bs-toggle="modal"
+        data-bs-target="#removeMemberModal"
+        data-team-id="{{ team.id }}"
+        data-members="{{ team.members.all|join:', ' }}">
+        <i class="bi bi-person-x-fill me-1"></i> Remove Member
+      </button>
       <form method="POST" action="{% url 'delete_team' team.id %}" class="delete-form" data-team-name="{{ team.name }}">
-       {% csrf_token %}
-       <button type="submit" class="position-absolute top-0 end-0 m-2 delete-btn" title="Delete">
-         🗑️
-       </button>
+        {% csrf_token %}
+        <button type="submit" class="position-absolute top-0 end-0 m-2 delete-btn" title="Delete">
+          🗑️
+        </button>
       </form>
-
       <h5><strong>{{ team.name }}</strong></h5>
-      <!--<p>Members: {{ team.members.all|join:", " }}</p>-->
       <p><strong>Members:</strong></p>
       <ol>
         {% for member in team.members.all %}
-         <li class="member-row">
-           <span>{{ forloop.counter }}. {{ member.username }}</span>
-           <button class="chat-btn" onclick="openChat({{ member.id }}, '{{ member.username }}')">💬 Chat</button>
-         </li>
+        <li class="member-row">
+          <span>{{ forloop.counter }}. {{ member.username }}</span>
+          <button class="chat-btn" onclick="openChat({{ member.id }}, '{{ member.username }}')">💬 Chat</button>
+        </li>
         {% endfor %}
-     </ol>
-
+      </ol>
       <p><strong>Team Lead:</strong> {{ team.team_lead }}</p>
       <button class="chat-btn lead" onclick="openChat({{ team.team_lead.id }}, '{{ team.team_lead.username }}')">💬 Chat with Lead</button>
-  
-
-
     </div>
-  {% empty %}
+    {% empty %}
     <p class="text-muted">No teams created yet.</p>
-  {% endfor %}
+    {% endfor %}
 
-
-  <!-- Chat Box Container (empty by default, JS se fill hoga) -->
-  <!-- Floating Chat Box (Hidden by default) -->
-  <div id="chatWindow" style="display:none; border:1px solid #ccc; border-radius:8px; padding:10px; width:300px; background:#fff; position:fixed; bottom:20px; right:20px; box-shadow:0 0 10px rgba(0,0,0,0.2); z-index:999;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h4 id="chatWith">Chat</h4>
-      <button onclick="closeChat()" style="background:red; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;">X</button>
-   </div>
-   <div id="chatMessages" style="height:200px; overflow-y:auto; border:1px solid #eee; margin:10px 0; padding:5px;"></div>
-   <input type="text" id="chatInput" placeholder="Type a message..." style="width:75%; padding:5px;" />
-   <button onclick="sendChat()" style="background:purple; color:white; border:none; border-radius:4px; padding:5px 10px; cursor:pointer;">Send</button>
-  </div>
-
-
-  <!-- CREATE TEAM MODAL -->
-  <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <form method="POST" action="{% url 'create_team' %}">
-        {% csrf_token %}
-        <div class="modal-content">
-          <div class="modal-header bg-warning">
-            <h5 class="modal-title">Create New Team</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            {{ team_form.name.label_tag }}<br>
-            {{ team_form.name }}<br><br>
-
-            <label for="id_members">Members:</label>
-            <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:6px;">
-              
-              
-              {% for user in eligible_members %}
-               <div class="form-check">
-                  <input class="form-check-input member-checkbox" type="checkbox" name="members" value="{{ user.id }}" id="user_{{ user.id }}">
-
-                  <label class="form-check-label" for="user_{{ user.id }}">{{ user.username }}</label>
-               </div>
-             {% endfor %}
-            </div>
-
-          </div>
-
-          <label for="team_lead">Team Lead:</label>
-          <select name="team_lead" class="form-control" id="team_lead_select" required>
-            <option value="" selected disabled>------------</option>
-            {% for user in eligible_leads %}
-                 <option value="{{ user.id }}" data-id="{{ user.id }}">{{ user.username }}</option>
-            {% endfor %}
-          </select>
-
-
-
-
-
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Save Team</button>
-          </div>
-                   
-
-        </div>
-      </form>
+    <!-- Floating Chat Box (Hidden by default) -->
+    <div id="chatWindow" style="display:none; border:1px solid #ccc; border-radius:8px; padding:10px; width:300px; background:#fff; position:fixed; bottom:20px; right:20px; box-shadow:0 0 10px rgba(0,0,0,0.2); z-index:999;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4 id="chatWith">Chat</h4>
+        <button onclick="closeChat()" style="background:red; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;">X</button>
+      </div>
+      <div id="chatMessages" style="height:200px; overflow-y:auto; border:1px solid #eee; margin:10px 0; padding:5px;"></div>
+      <input type="text" id="chatInput" placeholder="Type a message..." style="width:75%; padding:5px;" />
+      <button onclick="sendChat()" style="background:purple; color:white; border:none; border-radius:4px; padding:5px 10px; cursor:pointer;">Send</button>
     </div>
-  </div>
 
-  <!-- CHANGE ADMIN MODAL -->
-  <div class="modal fade" id="changeAdminModal" tabindex="-1" aria-labelledby="changeAdminModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <form method="POST" action="{% url 'make_admin' %}">
-        {% csrf_token %}
-        <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">Change Admin</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <label for="userSelect" class="form-label">Select User to Promote as Admin:</label>
-            <select name="user_id" id="userSelect" class="form-select" required>
-              {% for user in all_users %}
-                <option value="{{ user.id }}">{{ user.username }}</option>
+    <!-- CREATE TEAM MODAL -->
+    <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <form method="POST" action="{% url 'create_team' %}">
+          {% csrf_token %}
+          <div class="modal-content">
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title">Create New Team</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              {{ team_form.name.label_tag }}<br>
+              {{ team_form.name }}<br><br>
+              <label for="id_members">Members:</label>
+              <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:6px;">
+                {% for user in eligible_members %}
+                <div class="form-check">
+                  <input class="form-check-input member-checkbox" type="checkbox" name="members" value="{{ user.id }}" id="user_{{ user.id }}">
+                  <label class="form-check-label" for="user_{{ user.id }}">{{ user.username }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <label for="team_lead">Team Lead:</label>
+            <select name="team_lead" class="form-control" id="team_lead_select" required>
+              <option value="" selected disabled>------------</option>
+              {% for user in eligible_leads %}
+              <option value="{{ user.id }}" data-id="{{ user.id }}">{{ user.username }}</option>
               {% endfor %}
             </select>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success">Save Team</button>
+            </div>
           </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-dark">Make Admin</button>
-          </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
-  </div>
 
+    <!-- CHANGE ADMIN MODAL -->
+    <div class="modal fade" id="changeAdminModal" tabindex="-1" aria-labelledby="changeAdminModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <form method="POST" action="{% url 'make_admin' %}">
+          {% csrf_token %}
+          <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+              <h5 class="modal-title">Change Admin</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <label for="userSelect" class="form-label">Select User to Promote as Admin:</label>
+              <select name="user_id" id="userSelect" class="form-select" required>
+                {% for user in all_users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-dark">Make Admin</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
 
-   <!-- Remove Member Modal -->
-   <div class="modal fade" id="removeMemberModal" tabindex="-1" aria-labelledby="removeMemberModalLabel" aria-hidden="true">
-     <div class="modal-dialog">
-       <form method="POST" id="removeMemberForm">
-         {% csrf_token %}
-         <div class="modal-content">
+    <!-- Remove Member Modal -->
+    <div class="modal fade" id="removeMemberModal" tabindex="-1" aria-labelledby="removeMemberModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <form method="POST" id="removeMemberForm">
+          {% csrf_token %}
+          <div class="modal-content">
             <div class="modal-header bg-warning text-dark">
               <h5 class="modal-title" id="removeMemberModalLabel">Remove Team Members</h5>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -705,31 +480,59 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="modal-footer">
               <button type="submit" class="btn btn-warning">Remove Selected</button>
             </div>
-         </div>
-       </form>
+          </div>
+        </form>
+      </div>
     </div>
- </div>
 
 
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-<!--  toast alert
-{% if messages %}
-<script>
-{% for message in messages %}
-Swal.fire({
-icon: 'success',
-title: '{{ message|escapejs }}',
-toast: true,
-position: 'top-end',
-showConfirmButton: false,
-timer: 2000,
-timerProgressBar: true
-});
-{% endfor %}
-</script>
-{% endif %} -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- toast alert -->
+  {% if messages %}
+  <script>
+  {% for message in messages %}
+  Swal.fire({
+    icon: 'success',
+    title: '{{ message|escapejs }}',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true
+  });
+  {% endfor %}
+  </script>
+  {% endif %}
+
+  <!-- Floating Chat Button for Admin individual chat box with.-->
+  <button id="adminFloatingChatBtn" title="Message Users">💬</button>
+  <!-- Admin Chat Panel -->
+  <div id="adminChatPanel">
+    <div id="adminChatHeader">
+      <span id="adminChatTitle">Select User To Chat</span>
+      <button class="close-btn" id="adminChatCloseBtn">✖</button>
+    </div>
+    <div id="adminUserList">
+      {% for user in all_users %}
+        <div 
+          class="admin-user-entry"
+          data-user-id="{{ user.id }}"
+          data-username="{{ user.username }}"
+        >
+          <i class="bi bi-person" style="margin-right:7px;"></i> {{ user.username }}
+        </div>
+      {% endfor %}
+    </div>
+    <div id="adminChatWindow">
+      <div id="adminChatMessages"></div>
+      <div id="adminChatInputBox">
+        <input type="text" id="adminChatInput" placeholder="Type a message..." autocomplete="off" />
+        <button id="adminSendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 
 <script>
@@ -747,35 +550,34 @@ timerProgressBar: true
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const modal = document.getElementById('removeMemberModal');
-  const form = document.getElementById('removeMemberForm');
-  const checkboxesContainer = document.getElementById('memberCheckboxes');
+  document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('removeMemberModal');
+    const form = document.getElementById('removeMemberForm');
+    const checkboxesContainer = document.getElementById('memberCheckboxes');
 
-  modal.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-    const members = button.getAttribute('data-members').split(', ');
-    const teamId = button.getAttribute('data-team-id');
+    modal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const members = button.getAttribute('data-members').split(', ');
+      const teamId = button.getAttribute('data-team-id');
 
-    form.action = `/accounts/remove-members/${teamId}/`;  // Adjust URL as needed
+      form.action = `/accounts/remove-members/${teamId}/`;  // Adjust URL as needed
 
-    // Clear old checkboxes
-    checkboxesContainer.innerHTML = '';
+      // Clear old checkboxes
+      checkboxesContainer.innerHTML = '';
 
-    members.forEach(member => {
-      const checkboxHTML = `
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="members_to_remove" value="${member}" id="${member}">
-          <label class="form-check-label" for="${member}">${member}</label>
-        </div>`;
-      checkboxesContainer.insertAdjacentHTML('beforeend', checkboxHTML);
+      members.forEach(member => {
+        const checkboxHTML = `
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="members_to_remove" value="${member}" id="${member}">
+            <label class="form-check-label" for="${member}">${member}</label>
+          </div>`;
+        checkboxesContainer.insertAdjacentHTML('beforeend', checkboxHTML);
+      });
     });
   });
-});
 </script>
 
-
-<!--for memebers dropdown-->
+<!-- for members dropdown -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const memberCheckboxes = document.querySelectorAll('.member-checkbox');
@@ -805,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 </script>
 
- <!--for team lead's dropown -->
+<!-- for team lead's dropdown -->
 <script>
   const memberCheckboxes = document.querySelectorAll('.member-checkbox');
   const teamLeadSelect = document.querySelector('select[name="team_lead"]');
@@ -877,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function () {
   hideSelectedLeadOptionItself();
 </script>
 
-<!-- Delete button alert-->
+<!-- Delete button alert -->
 <script>
   document.querySelectorAll('.delete-form').forEach(form => {
     form.addEventListener('submit', function (e) {
@@ -895,13 +697,13 @@ document.addEventListener('DOMContentLoaded', function () {
         confirmButtonText: 'Yes, delete it!',
         reverseButtons: true,
         customClass: {
-        popup: 'swal2-sm',        // 👈 custom size
-        title: 'swal2-title-sm',  // 👈 smaller title
-        htmlContainer: 'swal2-text-sm',
-        confirmButton: 'btn btn-danger btn-sm',
-        cancelButton: 'btn btn-secondary btn-sm'
-      },
-      buttonsStyling: true
+          popup: 'swal2-sm',
+          title: 'swal2-title-sm',
+          htmlContainer: 'swal2-text-sm',
+          confirmButton: 'btn btn-danger btn-sm',
+          cancelButton: 'btn btn-secondary btn-sm'
+        },
+        buttonsStyling: true
       }).then((result) => {
         if (result.isConfirmed) {
           form.submit();  // Submit only if confirmed
@@ -910,9 +712,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 </script>
- 
 
-<!-- prevent selecting all memebers.-->
+<!-- prevent selecting all members in creating a team-->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const memberCheckboxes = document.querySelectorAll('.member-checkbox');
@@ -940,14 +741,13 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 </script>
 
-
- <!-- ////  for chat  ////-->
 <script type="module">
+  // --- Firebase Imports ---
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
   import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } 
     from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-  // Firebase Config
+  // --- Firebase Config ---
   const firebaseConfig = {
     apiKey: "AIzaSyCRC4aoMiVVMrTF8zhyb77VeDObjyVSeY4",
     authDomain: "my-expenses-chat.firebaseapp.com",
@@ -958,76 +758,1058 @@ document.addEventListener('DOMContentLoaded', function () {
     measurementId: "G-NXWEHNZKV2"
   };
 
-  // Init Firebase
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Current user (Django se dynamic inject hoga)
-  const currentUserId = Number({{ request.user.id }});   // ✅ int for DB
-  const currentUserName = "{{ request.user.username }}"; // ✅ string for display
+  // --- Admin Info (from Django context) ---
+  const ADMIN_ID = 0;  // or replace with dynamic Django user id if needed
+  const ADMIN_NAME = "admin";
 
-  // Chat state
+  // --- UI Elements ---
+  const floatingBtn = document.getElementById("adminFloatingChatBtn");
+  const chatPanel = document.getElementById("adminChatPanel");
+  const chatCloseBtn = document.getElementById("adminChatCloseBtn");
+  const userList = document.getElementById("adminUserList");
+  const chatWindow = document.getElementById("adminChatWindow");
+  const chatTitle = document.getElementById("adminChatTitle");
+  const chatMessages = document.getElementById("adminChatMessages");
+  const chatInput = document.getElementById("adminChatInput");
+  const sendBtn = document.getElementById("adminSendBtn");
+
+  // --- Chat State ---
   let currentReceiverId = null;
   let currentReceiverName = null;
+  let unsubscribeListener = null;
 
-  // ✅ Open chat box
-  window.openChat = function(receiverId, receiverName) {
-    currentReceiverId = Number(receiverId);   // DB ke liye int
-    currentReceiverName = receiverName;       // UI ke liye string
-
-    document.getElementById("chatWith").innerText = "Chat with " + receiverName;
-    document.getElementById("chatWindow").style.display = "block";
-
-    listenMessages(currentUserId, currentReceiverId);
+  // --- UI Behavior ---
+  floatingBtn.onclick = () => {
+    chatPanel.style.display = "flex";
+    chatWindow.style.display = "none";
+    userList.style.display = "block";
+    chatTitle.textContent = "Select User To Chat";
+    floatingBtn.style.display = "none";
+    if (unsubscribeListener) unsubscribeListener();
   };
 
-  // ✅ Close chat box
-  window.closeChat = function() {
-    document.getElementById("chatWindow").style.display = "none";
+  chatCloseBtn.onclick = () => {
+    chatPanel.style.display = "none";
+    floatingBtn.style.display = "flex";
+    if (unsubscribeListener) unsubscribeListener();
   };
 
-  // ✅ Send Message
-  window.sendChat = async function() {
-    const input = document.getElementById("chatInput");
-    const text = input.value.trim();
-    if (text !== "") {
-      await addDoc(collection(db, "messages"), {
-        SenderId: currentUserId,          // int
-        ReceiverId: currentReceiverId,    // int
-        text: text,
-        timestamp: serverTimestamp()
-      });
-      input.value = "";
+  // --- Attach Click Events for Users ---
+  function setupUserClickListeners() {
+    const entries = userList.querySelectorAll(".admin-user-entry");
+    entries.forEach(entry => {
+      entry.onclick = () => {
+        const userId = entry.getAttribute("data-user-id");
+        const username = entry.getAttribute("data-username");
+        openAdminChatPanel(userId, username);
+      };
+    });
+  }
+
+  // --- Open a Chat Panel ---
+  window.openAdminChatPanel = function (userId, username) {
+    chatPanel.style.display = "flex";
+    userList.style.display = "none";
+    chatWindow.style.display = "flex";
+    chatTitle.textContent = `Chat with ${username}`;
+    currentReceiverId = Number(userId);
+    currentReceiverName = username;
+    chatMessages.innerHTML = "";
+
+    if (unsubscribeListener) unsubscribeListener();  // clear old listeners
+    listenMessages(ADMIN_ID, currentReceiverId);
+    floatingBtn.style.display = "none";
+  };
+
+  // --- Back to user list when clicking the header ---
+  chatTitle.onclick = () => {
+    if (chatWindow.style.display === "flex") {
+      chatWindow.style.display = "none";
+      userList.style.display = "block";
+      chatTitle.textContent = "Select User To Chat";
+      if (unsubscribeListener) unsubscribeListener();
     }
   };
 
-  // ✅ Listen for messages
+  // --- Firestore Listener for Messages ---
   function listenMessages(senderId, receiverId) {
+    if (unsubscribeListener) unsubscribeListener(); // remove any previous listener first
+
     const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
-    onSnapshot(q, (snapshot) => {
-      const chatBox = document.getElementById("chatMessages");
-      chatBox.innerHTML = "";
+    unsubscribeListener = onSnapshot(q, (snapshot) => {
+      chatMessages.innerHTML = "";
       snapshot.forEach((doc) => {
         const msg = doc.data();
-
-        // Sirf relevant messages dikhane ke liye
-        if (
+        const isBetweenUsers =
           (msg.SenderId === senderId && msg.ReceiverId === receiverId) ||
-          (msg.SenderId === receiverId && msg.ReceiverId === senderId)
-        ) {
-          // ✅ Agar message current user se aya to uska naam
-          const displayName = msg.SenderId === senderId ? currentUserName : currentReceiverName;
+          (msg.SenderId === receiverId && msg.ReceiverId === senderId);
 
-          chatBox.innerHTML += `<p><b>${displayName}:</b> ${msg.text}</p>`;
+        if (isBetweenUsers) {
+          const sentByAdmin = msg.SenderId === senderId;
+          const who = sentByAdmin ? ADMIN_NAME : currentReceiverName;
+          const msgClass = sentByAdmin ? "sent" : "received";
+          chatMessages.innerHTML += `
+            <div class="admin-msg ${msgClass}">
+              <b>${who}:</b> ${msg.text}
+            </div>
+          `;
         }
       });
-      chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     });
   }
+
+  // --- Send Message Function ---
+  async function sendAdminMessage() {
+    if (!currentReceiverId) return;
+    const text = chatInput.value.trim();
+    if (text === "") return;
+
+    await addDoc(collection(db, "messages"), {
+      SenderId: ADMIN_ID,
+      ReceiverId: currentReceiverId,
+      text: text,
+      timestamp: serverTimestamp()
+    });
+
+    chatInput.value = "";
+  }
+
+  // --- Event Bindings (fixed) ---
+  sendBtn.onclick = sendAdminMessage;
+  chatInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendAdminMessage();
+  });
+
+  // --- Init ---
+  setupUserClickListeners();
+
+  // Optional: Open chat from team cards etc.
+  window.openChat = (userId, username) => {
+    openAdminChatPanel(userId, username);
+  };
 </script>
-
-
-
 
 </html>
 
+
+
+
+
+
+
+
+
+
+<!-- COPY OF CODE
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- SweetAlert2 CSS ///
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <!-- SweetAlert2 JS ///
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    body {
+      background-color: #fffdeb;
+      font-family: Arial, sans-serif;
+    }
+    .brand {
+      font-weight: bold;
+      font-size: 24px;
+      color: #8B4513;
+    }
+    .logout-btn {
+      background-color: darkred;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+    .table thead {
+      background-color: #f2e5c4;
+    }
+    .approved-btn {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+    }
+    .team-card {
+      background: #fff;
+      border: 2px solid #c5b97e;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .custom-alert {
+      background: #d1e7dd;
+      color: #0f5132;
+      border-left: 6px solid #198754;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .stylish-remove-btn {
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 25px;
+      transition: all 0.3s ease-in-out;
+    }
+    .stylish-remove-btn:hover {
+      background-color: #dc3545;
+      color: white;
+      border-color: #dc3545;
+      transform: scale(1.03);
+    }
+    .chat-window {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      width: 300px;
+    }
+    .msg {
+      margin: 5px 0;
+      padding: 5px;
+      border-radius: 6px;
+    }
+    .sent {
+      background: #d1f7c4;
+      text-align: right;
+    }
+    .received {
+      background: #f1f1f1;
+      text-align: left;
+    }
+    .team-card {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .member-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .chat-btn {
+      background: purple;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .chat-btn:hover {
+      background: darkviolet;
+    }
+    .chat-btn.lead {
+      background: teal;
+    }
+    .chat-btn.lead:hover {
+      background: darkcyan;
+    }
+
+    /* Floating chat button for admin */
+    #adminFloatingChatBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #6c3483;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      cursor: pointer;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    #adminFloatingChatBtn:hover {
+      background: #512d6d;
+    }
+    /* Chat panel styles */
+    #adminChatPanel {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 340px;
+      max-width: 96vw;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      z-index: 10000;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {from{opacity:0;} to{opacity:1;}}
+    #adminChatHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: #6c3483;
+      color: #fff;
+      font-size: 1rem;
+      border-top-left-radius: 14px;
+      border-top-right-radius: 14px;
+    }
+    #adminChatHeader .close-btn {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      font-size: 1.2em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 10px;
+    }
+    #adminUserList {
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 10px 18px 18px 18px;
+      background: #f9f9f9;
+    }
+    .admin-user-entry {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      color: #6c3483;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+    }
+    .admin-user-entry:hover {
+      background: #f3e6fa;
+    }
+    #adminChatWindow {
+      display: none;
+      flex-direction: column;
+      height: 340px;
+      background: #fff;
+    }
+    #adminChatMessages {
+      height: 220px;
+      overflow-y: auto;
+      padding: 10px 18px;
+      background: #f9f9f9;
+      font-size: 15px;
+      flex: 1;
+      border-bottom: 1px solid #eee;
+    }
+    .admin-msg {
+      margin-bottom: 8px;
+      padding: 7px 12px;
+      border-radius: 7px;
+      max-width: 80%;
+      word-break: break-word;
+      display: inline-block;
+      clear: both;
+    }
+    .admin-msg.sent {
+      background: #d1f7c4;
+      float: right;
+      text-align: right;
+    }
+    .admin-msg.received {
+      background: #f1f1f1;
+      float: left;
+      text-align: left;
+    }
+    #adminChatInputBox {
+      display: flex;
+      padding: 12px 18px;
+      background: #eee;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+    }
+    #adminChatInput {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      margin-right: 10px;
+      font-size: 15px;
+    }
+    #adminSendBtn {
+      background: #6c3483;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 20px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #adminSendBtn:hover {
+      background: #512d6d;
+    }
+  </style>
+</head>
+<body>
+
+  {% if messages %}
+    <div id="django-alert-container" class="position-fixed top-0 start-50 translate-middle-x mt-3 z-index-9999" style="z-index: 1055;">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg" role="alert" id="django-alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <nav class="d-flex justify-content-between align-items-center p-3 bg-warning">
+    <div class="brand">MY EXPENSES - Admin Panel</div>
+    <div>
+      <button class="btn btn-dark me-3" data-bs-toggle="modal" data-bs-target="#changeAdminModal">Change Admin</button>
+      <button class="btn btn-primary me-3" data-bs-toggle="modal" data-bs-target="#createTeamModal">+ Create Team</button>
+      <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <h2 class="text-brown mb-4">All Users & Reports</h2>
+    <!-- USER TABLE ///
+    <table class="table table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Total Expenses</th>
+          <th>Entries</th>
+          <th>Report</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for data in user_data %}
+        <tr>
+          <td>{{ data.user.username }}</td>
+          <td>Rs. {{ data.total|floatformat:2 }}</td>
+          <td>{{ data.entry_count }}</td>
+          <td>
+            <a href="{% url 'user_detail_report' data.user.id %}" class="btn btn-warning btn-sm">View Report</a>
+          <td>
+            {% if data.approved %}
+              <span class="btn btn-success">✅ Approved</span>
+            {% else %}
+              <form method="POST" action="{% url 'approve_expense' data.user.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Approve</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- PAGINATION CONTROLS ///
+    <ul class="pagination justify-content-center">
+      {% if user_data.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ user_data.previous_page_number }}">Previous</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+      {% for page_num in user_data.paginator.page_range %}
+        {% if user_data.number == page_num %}
+          <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if user_data.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ user_data.next_page_number }}">Next</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+    </nav>
+
+    <!-- TEAMS SECTION ///
+    <h3 class="mt-5 text-brown">Teams</h3>
+    {% for team in teams %}
+    <div class="team-card position-relative">
+      <!-- Remove Member Button and Modal Trigger ///
+      <button type="button"
+        class="btn btn-outline-danger stylish-remove-btn position-absolute top-0 end-0 me-5 mt-2"
+        data-bs-toggle="modal"
+        data-bs-target="#removeMemberModal"
+        data-team-id="{{ team.id }}"
+        data-members="{{ team.members.all|join:', ' }}">
+        <i class="bi bi-person-x-fill me-1"></i> Remove Member
+      </button>
+      <form method="POST" action="{% url 'delete_team' team.id %}" class="delete-form" data-team-name="{{ team.name }}">
+        {% csrf_token %}
+        <button type="submit" class="position-absolute top-0 end-0 m-2 delete-btn" title="Delete">
+          🗑️
+        </button>
+      </form>
+      <h5><strong>{{ team.name }}</strong></h5>
+      <p><strong>Members:</strong></p>
+      <ol>
+        {% for member in team.members.all %}
+        <li class="member-row">
+          <span>{{ forloop.counter }}. {{ member.username }}</span>
+          <button class="chat-btn" onclick="openChat({{ member.id }}, '{{ member.username }}')">💬 Chat</button>
+        </li>
+        {% endfor %}
+      </ol>
+      <p><strong>Team Lead:</strong> {{ team.team_lead }}</p>
+      <button class="chat-btn lead" onclick="openChat({{ team.team_lead.id }}, '{{ team.team_lead.username }}')">💬 Chat with Lead</button>
+    </div>
+    {% empty %}
+    <p class="text-muted">No teams created yet.</p>
+    {% endfor %}
+
+    <!-- Floating Chat Box (Hidden by default) //////// HAVE TO REMOVE
+    <div id="chatWindow" style="display:none; border:1px solid #ccc; border-radius:8px; padding:10px; width:300px; background:#fff; position:fixed; bottom:20px; right:20px; box-shadow:0 0 10px rgba(0,0,0,0.2); z-index:999;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4 id="chatWith">Chat</h4>
+        <button onclick="closeChat()" style="background:red; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;">X</button>
+      </div>
+      <div id="chatMessages" style="height:200px; overflow-y:auto; border:1px solid #eee; margin:10px 0; padding:5px;"></div>
+      <input type="text" id="chatInput" placeholder="Type a message..." style="width:75%; padding:5px;" />
+      <button onclick="sendChat()" style="background:purple; color:white; border:none; border-radius:4px; padding:5px 10px; cursor:pointer;">Send</button>
+    </div> ////////// HAVE TO REMOVE
+
+    <!-- CREATE TEAM MODAL ////
+    <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <form method="POST" action="{% url 'create_team' %}">
+          {% csrf_token %}
+          <div class="modal-content">
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title">Create New Team</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              {{ team_form.name.label_tag }}<br>
+              {{ team_form.name }}<br><br>
+              <label for="id_members">Members:</label>
+              <div style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; border-radius:6px;">
+                {% for user in eligible_members %}
+                <div class="form-check">
+                  <input class="form-check-input member-checkbox" type="checkbox" name="members" value="{{ user.id }}" id="user_{{ user.id }}">
+                  <label class="form-check-label" for="user_{{ user.id }}">{{ user.username }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <label for="team_lead">Team Lead:</label>
+            <select name="team_lead" class="form-control" id="team_lead_select" required>
+              <option value="" selected disabled>------------</option>
+              {% for user in eligible_leads %}
+              <option value="{{ user.id }}" data-id="{{ user.id }}">{{ user.username }}</option>
+              {% endfor %}
+            </select>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success">Save Team</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- CHANGE ADMIN MODAL ///
+    <div class="modal fade" id="changeAdminModal" tabindex="-1" aria-labelledby="changeAdminModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <form method="POST" action="{% url 'make_admin' %}">
+          {% csrf_token %}
+          <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+              <h5 class="modal-title">Change Admin</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <label for="userSelect" class="form-label">Select User to Promote as Admin:</label>
+              <select name="user_id" id="userSelect" class="form-select" required>
+                {% for user in all_users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-dark">Make Admin</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Remove Member Modal ///
+    <div class="modal fade" id="removeMemberModal" tabindex="-1" aria-labelledby="removeMemberModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <form method="POST" id="removeMemberForm">
+          {% csrf_token %}
+          <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+              <h5 class="modal-title" id="removeMemberModalLabel">Remove Team Members</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div id="memberCheckboxes">
+                <!-- checkboxes will be injected via JS ///
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-warning">Remove Selected</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Floating Button 
+    <div id="chatToggle">💬</div>
+
+    <!-- Chat Panel ///
+    <div id="chatPanel">
+      <div id="userList">
+        <!-- Users will be listed here ///
+      </div>
+      <div id="chatWindow" style="display:none;">
+        <div id="chatHeader">
+          <span id="chatTitle">Chat</span>
+          <span id="chatClose" style="cursor:pointer; font-size:18px; font-weight:bold;">✖</span>
+        </div>
+        <div id="chatMessages"></div>
+        <div id="chatInputBox">
+          <input type="text" id="chatInput" placeholder="Type a message..." />
+          <button onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
+  <!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- toast alert ///
+  {% if messages %}
+  <script>
+  {% for message in messages %}
+  Swal.fire({
+    icon: 'success',
+    title: '{{ message|escapejs }}',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true
+  });
+  {% endfor %}
+  </script>
+  {% endif %}
+
+  <!-- Floating Chat Button for Admin /// HAVEE TOO REMOVEEE *******
+  <button id="adminFloatingChatBtn" title="Message Users">💬</button>
+  <!-- Admin Chat Panel ///
+  <div id="adminChatPanel">
+    <div id="adminChatHeader">
+      <span id="adminChatTitle">Select User To Chat</span>
+      <button class="close-btn" id="adminChatCloseBtn">✖</button>
+    </div>
+    <div id="adminUserList">
+      {% for user in all_users %}
+        <div 
+          class="admin-user-entry"
+          data-user-id="{{ user.id }}"
+          data-username="{{ user.username }}"
+        >
+          <i class="bi bi-person" style="margin-right:7px;"></i> {{ user.username }}
+        </div>
+      {% endfor %}
+    </div>
+    <div id="adminChatWindow">
+      <div id="adminChatMessages"></div>
+      <div id="adminChatInputBox">
+        <input type="text" id="adminChatInput" placeholder="Type a message..." autocomplete="off" />
+        <button id="adminSendBtn">Send</button>
+      </div>
+    </div>
+  </div> ///// HAVE TO REMOVE ******
+
+</body>
+
+<script>
+  // Auto-dismiss the Django alert after 3 seconds
+  setTimeout(function () {
+    const alert = document.getElementById("django-alert");
+    if (alert) {
+      // Fade it out
+      alert.classList.remove("show");
+      alert.classList.add("hide");
+      // Remove it after transition
+      setTimeout(() => alert.remove(), 300);
+    }
+  }, 3000);
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('removeMemberModal');
+    const form = document.getElementById('removeMemberForm');
+    const checkboxesContainer = document.getElementById('memberCheckboxes');
+
+    modal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const members = button.getAttribute('data-members').split(', ');
+      const teamId = button.getAttribute('data-team-id');
+
+      form.action = `/accounts/remove-members/${teamId}/`;  // Adjust URL as needed
+
+      // Clear old checkboxes
+      checkboxesContainer.innerHTML = '';
+
+      members.forEach(member => {
+        const checkboxHTML = `
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="members_to_remove" value="${member}" id="${member}">
+            <label class="form-check-label" for="${member}">${member}</label>
+          </div>`;
+        checkboxesContainer.insertAdjacentHTML('beforeend', checkboxHTML);
+      });
+    });
+  });
+</script>
+
+<!-- for members dropdown ///
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+    const teamLeadSelect = document.querySelector('select[name="team_lead"]');
+
+    function updateTeamLeadOptions() {
+      const selectedMemberIds = Array.from(memberCheckboxes)
+        .filter(checkbox => checkbox.checked)
+        .map(checkbox => checkbox.value);
+
+      Array.from(teamLeadSelect.options).forEach(option => {
+        if (selectedMemberIds.includes(option.value)) {
+          option.disabled = true;
+          option.style.display = 'none';
+        } else {
+          option.disabled = false;
+          option.style.display = 'block';
+        }
+      });
+    }
+
+    memberCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', updateTeamLeadOptions);
+    });
+
+    updateTeamLeadOptions(); // run once on load
+  });
+</script>
+
+<!-- for team lead's dropdown ///
+<script>
+  const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+  const teamLeadSelect = document.querySelector('select[name="team_lead"]');
+
+  function updateMemberListBasedOnLead() {
+    const selectedLeadId = teamLeadSelect.value;
+
+    // Hide the selected team lead from members list
+    memberCheckboxes.forEach(cb => {
+      const container = cb.closest('.form-check');
+      if (cb.value === selectedLeadId && selectedLeadId !== "") {
+        container.style.display = 'none';
+        cb.checked = false;
+      } else {
+        container.style.display = '';
+      }
+    });
+  }
+
+  function updateLeadDropdownBasedOnMembers() {
+    const selectedMemberIds = Array.from(memberCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+
+    const options = teamLeadSelect.querySelectorAll('option');
+
+    options.forEach(opt => {
+      if (selectedMemberIds.includes(opt.value)) {
+        opt.style.display = 'none';
+        if (teamLeadSelect.value === opt.value) {
+          // Reset lead if it's now invalid
+          teamLeadSelect.value = "";
+        }
+      } else {
+        opt.style.display = '';
+      }
+    });
+  }
+
+  function hideSelectedLeadOptionItself() {
+    const selectedLeadId = teamLeadSelect.value;
+
+    teamLeadSelect.querySelectorAll('option').forEach(opt => {
+      // Only hide the selected option from the dropdown list (not the selected display)
+      if (opt.value === selectedLeadId && selectedLeadId !== "") {
+        opt.setAttribute('hidden', 'hidden');
+      } else {
+        opt.removeAttribute('hidden');
+      }
+    });
+  }
+
+  // Attach listeners
+  teamLeadSelect.addEventListener('change', () => {
+    updateMemberListBasedOnLead();
+    hideSelectedLeadOptionItself();
+  });
+
+  memberCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateLeadDropdownBasedOnMembers();
+      hideSelectedLeadOptionItself();  // In case user was removed from members and appears again
+    });
+  });
+
+  // Run on page load (for form reuse)
+  updateMemberListBasedOnLead();
+  updateLeadDropdownBasedOnMembers();
+  hideSelectedLeadOptionItself();
+</script>
+
+<!-- Delete button alert ///
+<script>
+  document.querySelectorAll('.delete-form').forEach(form => {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();  // Prevent default form submission
+
+      const teamName = form.getAttribute('data-team-name');
+
+      Swal.fire({
+        title: `Delete "${teamName}"?`,
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        reverseButtons: true,
+        customClass: {
+          popup: 'swal2-sm',
+          title: 'swal2-title-sm',
+          htmlContainer: 'swal2-text-sm',
+          confirmButton: 'btn btn-danger btn-sm',
+          cancelButton: 'btn btn-secondary btn-sm'
+        },
+        buttonsStyling: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();  // Submit only if confirmed
+        }
+      });
+    });
+  });
+</script>
+
+<!-- prevent selecting all members in creating a team ///
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+    const teamLeadSelect = document.querySelector('select[name="team_lead"]');
+
+    function enforceAtLeastOneRemainingForLead() {
+      const checked = Array.from(memberCheckboxes).filter(cb => cb.checked);
+      const unchecked = Array.from(memberCheckboxes).filter(cb => !cb.checked);
+
+      // Disable remaining unchecked if only one is left
+      if (checked.length >= memberCheckboxes.length - 1) {
+        unchecked.forEach(cb => cb.disabled = true);
+      } else {
+        memberCheckboxes.forEach(cb => cb.disabled = false);
+      }
+    }
+
+    // Add event listeners to enforce rule
+    memberCheckboxes.forEach(cb => {
+      cb.addEventListener('change', enforceAtLeastOneRemainingForLead);
+    });
+
+    // Initial check on page load
+    enforceAtLeastOneRemainingForLead();
+  });
+</script>
+
+<script type="module">
+  // --- Firebase Imports ---
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } 
+    from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+  // --- Firebase Config ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRC4aoMiVVMrTF8zhyb77VeDObjyVSeY4",
+    authDomain: "my-expenses-chat.firebaseapp.com",
+    projectId: "my-expenses-chat",
+    storageBucket: "my-expenses-chat.firebasestorage.app",
+    messagingSenderId: "112414536425",
+    appId: "1:112414536425:web:310af2bd54389763a73678",
+    measurementId: "G-NXWEHNZKV2"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- Admin Info (from Django context) ---
+  const ADMIN_ID = 0;
+  const ADMIN_NAME = "admin";
+
+  // --- UI Elements ---
+  const floatingBtn = document.getElementById("adminFloatingChatBtn");
+  const chatPanel = document.getElementById("adminChatPanel");
+  const chatCloseBtn = document.getElementById("adminChatCloseBtn");
+  const userList = document.getElementById("adminUserList");
+  const chatWindow = document.getElementById("adminChatWindow");
+  const chatTitle = document.getElementById("adminChatTitle");
+  const chatMessages = document.getElementById("adminChatMessages");
+  const chatInput = document.getElementById("adminChatInput");
+  const sendBtn = document.getElementById("adminSendBtn");
+
+  // --- Chat State ---
+  let currentReceiverId = null;
+  let currentReceiverName = null;
+  let unsubscribeListener = null;
+
+  // --- UI Behavior ---
+  floatingBtn.onclick = () => {
+    chatPanel.style.display = "flex";
+    chatWindow.style.display = "none";
+    userList.style.display = "block";
+    chatTitle.textContent = "Select User To Chat";
+    floatingBtn.style.display = "none";
+    if (unsubscribeListener) unsubscribeListener();
+  };
+
+  chatCloseBtn.onclick = () => {
+    chatPanel.style.display = "none";
+    floatingBtn.style.display = "flex";
+    if (unsubscribeListener) unsubscribeListener();
+  };
+
+  function setupUserClickListeners() {
+    const entries = userList.querySelectorAll(".admin-user-entry");
+    entries.forEach(entry => {
+      entry.onclick = () => {
+        const userId = entry.getAttribute("data-user-id");
+        const username = entry.getAttribute("data-username");
+        openAdminChatPanel(userId, username);
+      };
+    });
+  }
+   // chat box 
+  window.openAdminChatPanel = function (userId, username) {
+    chatPanel.style.display = "flex";
+    userList.style.display = "none";
+    chatWindow.style.display = "flex";
+    chatTitle.textContent = `Chat with ${username}`;
+    currentReceiverId = Number(userId);
+    currentReceiverName = username;
+    chatMessages.innerHTML = "";
+    if (unsubscribeListener) unsubscribeListener();
+    listenMessages(ADMIN_ID, currentReceiverId);
+    floatingBtn.style.display = "none";
+  };
+
+  sendBtn.onclick = openAdminChatPanel;
+  chatInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendAdminMessage();
+  });
+
+  chatTitle.onclick = () => {
+    if (chatWindow.style.display === "flex") {
+      chatWindow.style.display = "none";
+      userList.style.display = "block";
+      chatTitle.textContent = "Select User To Chat";
+      if (unsubscribeListener) unsubscribeListener();
+    }
+  };
+
+  // --- Firestore Listeners ---
+  function listenMessages(senderId, receiverId) {
+    const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+    unsubscribeListener = onSnapshot(q, (snapshot) => {
+      chatMessages.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const msg = doc.data();
+        const isBetweenUsers =
+          (msg.SenderId === senderId && msg.ReceiverId === receiverId) ||
+          (msg.SenderId === receiverId && msg.ReceiverId === senderId);
+        if (isBetweenUsers) {
+          const sentByAdmin = msg.SenderId === senderId;
+          const who = sentByAdmin ? ADMIN_NAME : currentReceiverName;
+          const msgClass = sentByAdmin ? "sent" : "received";
+          chatMessages.innerHTML += `
+            <div class="admin-msg ${msgClass}">
+              <b>${who}:</b> ${msg.text}
+            </div>
+          `;
+        }
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+  }
+
+  // --- Send Message ---
+  async function sendAdminMessage() {
+    if (!currentReceiverId) return;
+    const text = chatInput.value.trim();
+    if (text === "") return;
+    await addDoc(collection(db, "messages"), {
+      SenderId: ADMIN_ID,
+      ReceiverId: currentReceiverId,
+      text: text,
+      timestamp: serverTimestamp()
+    });
+    chatInput.value = "";
+  }
+
+  sendBtn.onclick = sendAdminMessage;
+  chatInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendAdminMessage();
+  });
+
+  // --- Init ---
+  setupUserClickListeners();
+
+  // Optional: open chat directly from team cards etc
+  window.openChat = (userId, username) => {
+    openAdminChatPanel(userId, username);
+  };
+</script>
+</html>
