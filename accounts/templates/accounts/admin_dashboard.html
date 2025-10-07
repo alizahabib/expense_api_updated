@@ -741,6 +741,8 @@
   });
 </script>
 
+
+<!--for chat-->
 <script type="module">
   // --- Firebase Imports ---
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -892,6 +894,60 @@
     openAdminChatPanel(userId, username);
   };
 </script>
+
+
+<!--for msg notification-->
+<!-- ✅ Firebase Cloud Messaging Script -->
+<script type="module">
+ 
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js";
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+
+  // --- Firebase Config (same as your Firestore one) ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRC4aoMiVVMrTF8zhyb77VeDObjyVSeY4",
+    authDomain: "my-expenses-chat.firebaseapp.com",
+    projectId: "my-expenses-chat",
+    storageBucket: "my-expenses-chat.firebasestorage.app",
+    messagingSenderId: "112414536425",
+    appId: "1:112414536425:web:310af2bd54389763a73678",
+  };
+
+  // --- Initialize Firebase App ---
+  
+  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  const messaging = getMessaging(app);
+
+  // --- Register Service Worker for notifications ---
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      .then(reg => console.log('✅ Service Worker registered', reg))
+      .catch(err => console.error('❌ Service Worker registration failed', err));
+  }
+
+  // --- Request Permission and get Token ---
+  async function initFCM() {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      const token = await getToken(messaging, {
+        vapidKey: "BFgfsOCa1v3dR8w6mNMNEZtBuIqhS0NRfdkhRw9LNqrVXDCrW8lSGdi93mq5KKBmSdWPgh-6QZGKORRR2JzwuD0"
+      });
+      console.log("✅ FCM Token:", token);
+    } else {
+      console.log("❌ Notification permission denied.");
+    }
+  }
+
+  initFCM();
+
+  // --- Listen for foreground messages ---
+  onMessage(messaging, (payload) => {
+    console.log("📩 New foreground message:", payload);
+    const { title, body } = payload.notification;
+    new Notification(title, { body });
+  });
+</script>
+
 
 </html>
 
