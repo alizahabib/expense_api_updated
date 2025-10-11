@@ -1,6 +1,5 @@
 from django.db import models
 
-# Create your models here.
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
@@ -24,6 +23,8 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True, null=True, blank=True)
+    fcm_token = models.TextField(null=True, blank=True)
+  
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -89,3 +90,5 @@ class Team(models.Model):
     
     def __str__(self):
         return self.name
+
+

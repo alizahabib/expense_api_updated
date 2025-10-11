@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, logout_view, dashboard, ExpenseListAPI,remove_team_members ,create_team,make_admin,approve_expense,delete_team, update_expense_dates, user_report, admin_login_view, admin_dashboard, user_detail_report
+from .views import register_view, login_view, logout_view, dashboard, ExpenseListAPI, send_chat_message,save_fcm_token,send_message_notification,remove_team_members ,create_team,make_admin,approve_expense,delete_team, update_expense_dates, user_report, admin_login_view, admin_dashboard, user_detail_report
 
 urlpatterns = [
     path('register/', register_view, name='register'),
@@ -20,17 +20,10 @@ urlpatterns = [
     path('make-admin/',make_admin, name='make_admin'),
     path('create-team/',create_team, name='create_team'),
     path('remove-members/<int:team_id>/',remove_team_members, name='remove_team_members'),
-
-
-
-    
-
-
+    path("save-token/", save_fcm_token, name="save_fcm_token"), # firebase chat
+    path("send-notification/<int:user_id>/", send_message_notification, name="send_message_notification"), #firebase chat
    
-    
-
-
-
-    
+    path("send-chat/<int:user_id>/", send_chat_message, name="send_chat_message"),
 
 ]
+

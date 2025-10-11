@@ -4,6 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+
   
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -897,56 +899,200 @@
 
 
 <!--for msg notification-->
-<!-- ✅ Firebase Cloud Messaging Script -->
+<!-- ✅ Firebase Cloud Messaging Script 
 <script type="module">
- 
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js";
-  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 
-  // --- Firebase Config (same as your Firestore one) ---
+  // --- Firebase Config ---
   const firebaseConfig = {
-    apiKey: "AIzaSyCRC4aoMiVVMrTF8zhyb77VeDObjyVSeY4",
+    apiKey: "AIzaSyCRCA4oMiVMwrTF8zhyb77WeDobJvjSEY4",
     authDomain: "my-expenses-chat.firebaseapp.com",
     projectId: "my-expenses-chat",
-    storageBucket: "my-expenses-chat.firebasestorage.app",
-    messagingSenderId: "112414536425",
-    appId: "1:112414536425:web:310af2bd54389763a73678",
+    storageBucket: "my-expenses-chat.appspot.com",
+    messagingSenderId: "112441534625",
+    appId: "1:112441534625:web:31a0f2bd54389763a73678"
   };
-
-  // --- Initialize Firebase App ---
   
+  
+  // --- Initialize Firebase (avoid duplicate app error) ---
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   const messaging = getMessaging(app);
 
-  // --- Register Service Worker for notifications ---
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      .then(reg => console.log('✅ Service Worker registered', reg))
-      .catch(err => console.error('❌ Service Worker registration failed', err));
+  // --- ✅ Register the Service Worker ---
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("/firebase-messaging-sw.js")
+      .then((registration) => {
+        console.log("✅ Service Worker registered:", registration);
+
+        // Now safe to request permission and get token
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            getToken(messaging, {
+              vapidKey: "BEwjwbhReUJ5hFZrfvmsYJIGvDIR9bQTXLVoOEJck9uXfa5wN1iwySC7uUReS1oCpXtIVCptAi8bAzFEiBsTWE8",
+              serviceWorkerRegistration: registration, // important!
+            })
+              .then((currentToken) => {
+                if (currentToken) {
+                  console.log("✅ FCM Token:", currentToken);
+
+                  // Save token to backend
+                  fetch("/accounts/save-token/", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/x-www-form-urlencoded",
+                      "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                    body: `token=${currentToken}`,
+                  });
+                }
+              })
+              .catch((err) => {
+                console.log("❌ Error getting token:", err);
+              });
+          } else {
+            console.warn("🚫 Notification permission denied.");
+          }
+        });
+      })
+      .catch((err) => {
+        console.error("❌ Service Worker registration failed:", err);
+      });
+  } else {
+    console.warn("⚠️ Service workers not supported in this browser.");
   }
 
-  // --- Request Permission and get Token ---
-  async function initFCM() {
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      const token = await getToken(messaging, {
-        vapidKey: "BFgfsOCa1v3dR8w6mNMNEZtBuIqhS0NRfdkhRw9LNqrVXDCrW8lSGdi93mq5KKBmSdWPgh-6QZGKORRR2JzwuD0"
+  // --- Display Incoming Messages Instantly ---
+  onMessage(messaging, (payload) => {
+    console.log("📬 Message received:", payload);
+    new Notification(payload.notification.title, {
+      body: payload.notification.body,
+      icon: "/static/icons/icon-192x192.png",
+    });
+  });
+
+  // --- Send Chat Message (Admin → User) ---
+  async function sendChatMessage(userId, messageText) {
+    if (!messageText.trim()) return;
+
+    try {
+      const response = await fetch(`/accounts/send-chat/${userId}/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: `message=${encodeURIComponent(messageText)}`,
       });
-      console.log("✅ FCM Token:", token);
-    } else {
-      console.log("❌ Notification permission denied.");
+
+      const result = await response.json();
+      console.log("💬 Chat message response:", result);
+
+      if (result.status === "success") {
+        console.log("✅ Message sent and notification triggered!");
+      } else {
+        console.warn("⚠️ Message sending failed:", result.error);
+      }
+    } catch (err) {
+      console.error("❌ Error sending chat message:", err);
     }
   }
 
-  initFCM();
+  // --- Helper for CSRF Token ---
+  function getCookie(name) {
+     const cookieValue = document
+      .querySelector('meta[name="csrf-token"]')
+      .getAttribute('content');
+    return cookieValue;
+  }
 
-  // --- Listen for foreground messages ---
-  onMessage(messaging, (payload) => {
-    console.log("📩 New foreground message:", payload);
-    const { title, body } = payload.notification;
-    new Notification(title, { body });
-  });
+  // Example usage (for testing only)
+  // sendChatMessage(2, "Hello! This is a test message."); // replace 2 with real user ID
+</script> -->
+
+<script type="module">
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js";
+
+  // ✅ Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRCA4oMiVMwrTF8zhyb77WeDobJvjSEY4",
+    authDomain: "my-expenses-chat.firebaseapp.com",
+    projectId: "my-expenses-chat",
+    storageBucket: "my-expenses-chat.appspot.com",
+    messagingSenderId: "112441534625",
+    appId: "1:112441534625:web:31a0f2bd54389763a73678"
+  };
+
+  // ✅ Initialize Firebase (only once)
+  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  const messaging = getMessaging(app);
+
+  // ✅ Register the service worker (this enables background popups)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("/firebase-messaging-sw.js")
+      .then((registration) => {
+        console.log("✅ Service Worker registered:", registration);
+
+        // ✅ Request notification permission
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            console.log("🔔 Notification permission granted!");
+
+            // ✅ Get and save FCM token
+            getToken(messaging, {
+              vapidKey: "BEwjwbhReUJ5hFZrfvmsYJIGvDIR9bQTXLVoOEJck9uXfa5wN1iwySC7uUReS1oCpXtIVCptAi8bAzFEiBsTWE8",
+              serviceWorkerRegistration: registration,
+            })
+              .then((currentToken) => {
+                if (currentToken) {
+                  console.log("✅ FCM Token:", currentToken);
+
+                  // ✅ Send token to Django backend
+                  fetch("/accounts/save-token/", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/x-www-form-urlencoded",
+                      "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                    body: `token=${currentToken}`,
+                  });
+                } else {
+                  console.warn("⚠️ No FCM token received.");
+                }
+              })
+              .catch((err) => console.error("❌ Error getting token:", err));
+          } else {
+            console.warn("🚫 Notification permission denied.");
+          }
+        });
+      })
+      .catch((err) => console.error("❌ Service Worker registration failed:", err));
+  }
+
+  // ⚠️ No onMessage() needed — FCM handles popups automatically when tab is open or closed.
+
+  // ✅ Helper for CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
 </script>
+
+
+
 
 
 </html>

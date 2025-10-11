@@ -163,3 +163,19 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "alizahabib12345@gmail.com"          # replace with your Gmail
 EMAIL_HOST_PASSWORD = "xvmt tpxy ainn gudq"        # use App Password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+
+
+
+import os
+import firebase_admin
+from firebase_admin import credentials
+
+# Path to your Firebase service account JSON key
+FIREBASE_CRED_PATH = os.path.join(BASE_DIR, "firebase_service_key.json")
+
+# Initialize Firebase Admin SDK (only once)
+if not firebase_admin._apps:
+    cred = credentials.Certificate(FIREBASE_CRED_PATH)
+    firebase_admin.initialize_app(cred)
