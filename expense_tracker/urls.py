@@ -22,7 +22,14 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.views.generic import TemplateView
+from django.http import FileResponse
+from django.conf import settings
+import os
 
+
+def firebase_sw(request):
+    file_path = os.path.join(settings.BASE_DIR, "firebase-messaging-sw.js")
+    return FileResponse(open(file_path, "rb"), content_type="application/javascript")
 
 # Swagger schema view
 schema_view = get_schema_view(
@@ -44,14 +51,7 @@ urlpatterns = [
     path('', include('expenses.urls')),
     
      # Firebase Service Worker
-    path(
-        'firebase-messaging-sw.js',
-        TemplateView.as_view(
-            template_name='firebase-messaging-sw.js',
-            content_type='application/javascript'
-        ),
-        name='firebase-messaging-sw'
-    ),
+    path("firebase-messaging-sw.js", firebase_sw, name="firebase-sw"),
 
     # Auth
     #path('login/', auth_views.LoginView.as_view(), name='login'),

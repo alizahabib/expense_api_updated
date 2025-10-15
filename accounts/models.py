@@ -92,3 +92,14 @@ class Team(models.Model):
         return self.name
 
 
+# for Device ID
+class DeviceToken(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    token = models.TextField()
+    device_info = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    device_id = models.CharField(max_length=255, null=True, blank=True)
+    
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.device_info or 'Unknown Device'}"

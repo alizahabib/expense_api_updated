@@ -524,21 +524,6 @@ def create_team(request):
 
 
 
-"""
-@require_POST
-def create_team(request):
-    form = TeamForm(request.POST)
-    if form.is_valid():
-        team = form.save(commit=False)
-        team.team_lead = form.cleaned_data['team_lead']
-        team.save()
-        form.save_m2m()
-        messages.success(request, f"✅ Team '{team.name}' has been created successfully!")
-    else:
-        messages.error(request, "❌ Failed to create team. Please check the form.")
-    return redirect('admin_dashboard')
-"""
-
 
 
 
@@ -556,10 +541,10 @@ def remove_team_members(request, team_id):
     return redirect('admin_dashboard')
 
 
-
+"""
 #for chat
 # Dummy example
-"""
+
 from accounts.utils.notifications import send_push_notification
 from django.http import JsonResponse
 
@@ -575,9 +560,9 @@ def send_message_notification(request):
 
     return JsonResponse({"status": "Notification sent"})
 
-
-# new work (8-10-25)
 """
+# new work (8-10-25)
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
@@ -611,101 +596,103 @@ def send_message_notification(request, user_id):
 
 
 
-
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from accounts.models import CustomUser
-from accounts.utils.notifications import send_push_notification
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from accounts.models import DeviceToken
 
-# Save FCM Token (called from frontend)
+
+@csrf_exempt
 @login_required
-@csrf_exempt
 def save_fcm_token(request):
-    if request.method == "POST":
-        token = request.POST.get("token")
-        user = request.user
-        if user.is_authenticated:
-            user.fcm_token = token
-            user.save()
-            print(f"✅ Token saved for {user.username}: {token}")
-            return JsonResponse({"status": "success"})
-    return JsonResponse({"status": "error"})
+    """
+    Save or update the Firebase token + device info + device ID per user (browser/device).
+    """
+
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
+
+    # ✅ Extract fields from POST
+    token = request.POST.get("token")
+    device_info = request.POST.get("device_info", request.META.get("HTTP_USER_AGENT"))
+    device_id = request.POST.get("device_id")
+
+    # ❌ Token missing
+    if not token:
+        return JsonResponse({"status": "error", "message": "Token is missing"}, status=400)
+
+    if not device_id:
+        return JsonResponse({"status": "error", "message": "Device ID is missing"}, status=400)
+
+    user = request.user
+
+    # ✅ Save or update DeviceToken record
+    device_token, created = DeviceToken.objects.get_or_create(
+        token=token,
+        defaults={
+            "user": user,
+            "device_info": device_info,
+            "device_id": device_id,
+        }
+    )
+
+    if not created:
+        # 🔄 Update existing record
+        device_token.user = user
+        device_token.device_info = device_info
+        device_token.device_id = device_id
+        device_token.save()
+
+    print(f"✅ FCM Token saved for {user.username} from: {device_info} (Device ID: {device_id})")
+
+    return JsonResponse({"status": "success", "message": "Token saved successfully"})
 
 
-"""
-# Send Message Notification (Admin → User)
-def send_message_notification(request, user_id):
-    try:
-        user = CustomUser.objects.get(id=user_id)
-        if not user.fcm_token:
-            return JsonResponse({"error": "User does not have an FCM token"}, status=400)
 
-        send_push_notification(
-            token=user.fcm_token,
-            title="📩 New Message from Admin",
-            body="Hello! You’ve received a new message 💬"
-        )
-        return JsonResponse({"status": "Notification sent successfully"})
-    except CustomUser.DoesNotExist:
-        return JsonResponse({"error": "User not found"}, status=404)
-
-"""
- #sending chat msg automatically 
-from django.http import JsonResponse
-from accounts.models import CustomUser
-from accounts.utils.notifications import send_push_notification
-from firebase_admin import messaging
-
-"""
-def send_chat_message(request, user_id):
-    if request.method == "POST":
-        message_text = request.POST.get("message")
-        receiver = CustomUser.objects.get(id=user_id)
-
-        # (optional) You can also store this message in Firebase/Firestore
-        print(f"📩 Message sent to {receiver.username}: {message_text}")
-
-        # Send FCM notification instantly
-        if receiver.fcm_token:
-            send_push_notification(
-                token=receiver.fcm_token,
-                title="💬 New Message from Admin",
-                body=message_text
-            )
-            return JsonResponse({"status": "success", "message": "Notification sent!"})
-        else:
-            return JsonResponse({"error": "User does not have FCM token"})
-    return JsonResponse({"error": "Invalid request method"})
-"""
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from accounts.utils.notifications import send_push_notification
-from accounts.models import CustomUser
 
 @csrf_exempt
+@login_required
+@login_required
 def send_chat_message(request, user_id):
+    """
+    Called when the admin sends a chat message to a user.
+    Triggers a Firebase push notification to the user's specific device.
+    """
+
     if request.method == "POST":
-        message_text = request.POST.get("message", "")
+        message_text = request.POST.get("message", "").strip()
+        device_id = request.POST.get("device_id", "").strip()
+
+        if not message_text:
+            return JsonResponse({"status": "error", "message": "Message cannot be empty"}, status=400)
+
         try:
-            # 1️⃣ Get target user
-            user = CustomUser.objects.get(id=user_id)
-
-            # 2️⃣ Save message (optional — if you want chat history)
-            # ChatMessage.objects.create(sender=request.user, receiver=user, text=message_text)
-
-            # 3️⃣ Send FCM notification
-            if user.fcm_token:
-                send_push_notification(
-                    token=user.fcm_token,
-                    title=f"💬 New Message from {request.user.username}",
-                    body=message_text or "You have a new message!"
-                )
-                print("✅ Notification sent to:", user.username)
-            else:
-                print("⚠️ No FCM token for user:", user.username)
-
-            return JsonResponse({"status": "success"})
+            recipient = CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist:
-            return JsonResponse({"status": "error", "error": "User not found"})
-    return JsonResponse({"status": "error", "error": "Invalid request"})
+            return JsonResponse({"status": "error", "message": "User not found"}, status=404)
+
+        # Filter by user and device_id if provided
+        device_token_entry = None
+        if device_id:
+            device_token_entry = DeviceToken.objects.filter(user=recipient, device_id=device_id).first()
+
+        # Fallback to latest device token if device_id not matched
+        if not device_token_entry:
+            device_token_entry = DeviceToken.objects.filter(user=recipient).order_by("-created_at").first()
+
+        if not device_token_entry:
+            print(f"⚠️ No FCM token for user: {recipient.username}")
+            return JsonResponse({"status": "error", "message": "User does not have an FCM token"}, status=400)
+
+        # ✅ Send FCM notification
+        send_push_notification(
+            token=device_token_entry.token,
+            title=f"💬 New Message from {request.user.username}",
+            body=message_text
+        )
+
+        print(f"✅ Notification sent to {recipient.username} on device {device_token_entry.device_id}: {message_text}")
+        return JsonResponse({"status": "success", "message": "Notification sent"})
+
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
 
